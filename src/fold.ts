@@ -48,6 +48,8 @@ export interface StepMeta {
   pose?: Partial<Pose>;
   /** Pose offsets that swell and return within the step. */
   arc?: Partial<Pose>;
+  /** Pose offsets as any function of the step's progress (0–1), for flight paths. */
+  path?: (u: number) => Partial<Pose>;
   /** Easing for the pose, layer heights and solved joints. */
   ease?: EaseName;
   /** Intro/outro steps are skipped when `progress` maps onto the sequence. */

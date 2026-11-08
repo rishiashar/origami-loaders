@@ -86,6 +86,10 @@ export class Player {
       const to = step.pose?.[key];
       frame.pose[key] = (to === undefined ? from[key] : lerp(from[key], to, pe)) + (step.arc?.[key] ?? 0) * arc;
     }
+    if (step.path) {
+      const off = step.path(local);
+      for (const key of POSE_KEYS) frame.pose[key] += off[key] ?? 0;
+    }
     frame.step = k;
     frame.local = local;
     return frame;

@@ -1,4 +1,5 @@
 import { Folder, type Face } from '../fold';
+import { eases, type Pose } from '../motion';
 import type { P2 } from '../geom';
 
 /**
@@ -18,6 +19,19 @@ const edgeL: P2 = [-a, 1 - a / t225];
 const edgeR: P2 = [a, 1 - a / t225];
 /** Wing fold: 11.25° off the keel, so the wing's top edge lands on the keel. */
 const wing: P2 = [-2 * t1125, -1];
+
+const LOOP = 0.6;
+const RADIUS = 0.42;
+function flight(u: number): Partial<Pose> {
+  if (u < LOOP) {
+    const θ = 2 * Math.PI * eases.inOut(u / LOOP);
+    // Shrink a little over the top so the loop stays inside the loader's box.
+    const top = (1 - Math.cos(θ)) / 2; // 0 at the start and end of the loop, 1 at the top
+    return { tx: RADIUS * Math.sin(θ), ty: (2 * RADIUS - 0.3) * top, rz: (θ * 180) / Math.PI, s: -0.22 * top };
+  }
+  const b = eases.in((u - LOOP) / (1 - LOOP));
+  return { tx: 2.6 * b, ty: 0.9 * b, tz: 0.3 * b, rz: 360 + 14 * b, o: -b };
+}
 
 export function buildPlane() {
   const F = new Folder({ rx: -30, ry: 12, ty: 0.7, tz: 0.5, o: 0 }, [[-a, -1], [a, -1], [a, 1], [-a, 1]]);
@@ -58,7 +72,8 @@ export function buildPlane() {
     s.attach(back, s.hinge(nose, wing, [-0.6, -0.8], 1, 90, { ease: 'inOut' }));
   });
   F.step({ diagram: 7, label: 'Ready to fly', duration: 0.6, ease: 'inOut' });
-  F.step({ diagram: 7, label: 'Fly', duration: 0.9, phase: 'outro', ease: 'in', pose: { tx: 1.9, ty: 0.7, tz: 0.3, o: 0 }, arc: { rz: 5 } });
+  // One loop-the-loop, nose pitching all the way round, then off up and away.
+  F.step({ diagram: 7, label: 'Fly', duration: 2.1, phase: 'outro', ease: 'linear', path: flight });
 
   return F.compile();
 }

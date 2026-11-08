@@ -8,8 +8,11 @@
 <meta name="theme-color" content="#161615" media="(prefers-color-scheme: dark)">
 <meta name="description" content="Paper loaders that fold themselves. A web component that draws real origami as live SVG.">
 <title>origami-loaders</title>
+<script>try { var t = localStorage.getItem('ol-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <style>
   :root {
+    color-scheme: light;
+    --card-bg: oklch(0.972 0.003 95);
     --bg: oklch(0.994 0.002 95);
     --text: oklch(0.245 0.008 95);
     --muted: oklch(0.53 0.008 95);
@@ -40,8 +43,28 @@
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: oklch(0.175 0.004 95);
+    --text: oklch(0.935 0.004 95);
+    --muted: oklch(0.69 0.006 95);
+    --faint: oklch(0.5 0.006 95);
+    --hairline: oklch(1 0 0 / 0.1);
+    --code-bg: oklch(0.215 0.004 95);
+    --win-bg: oklch(0.205 0.004 95);
+    --chrome-bg: oklch(0.235 0.004 95);
+    --hover: oklch(1 0 0 / 0.06);
+    --elevation: 0 0 0 1px oklch(1 0 0 / 0.1);
+    --bezel: oklch(0.31 0.005 95);
+    --photo-bg: oklch(0.245 0.005 95);
+    --splash-bg: oklch(0.215 0.006 85);
+    --accent: oklch(0.74 0.12 255);
+    --focus: oklch(0.935 0.004 95);
+    --card-bg: oklch(0.205 0.004 95);
+  }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
       --bg: oklch(0.175 0.004 95);
       --text: oklch(0.935 0.004 95);
       --muted: oklch(0.69 0.006 95);
@@ -57,6 +80,7 @@
       --splash-bg: oklch(0.215 0.006 85);
       --accent: oklch(0.74 0.12 255);
       --focus: oklch(0.935 0.004 95);
+      --card-bg: oklch(0.205 0.004 95);
     }
   }
 
@@ -75,7 +99,10 @@
     text-rendering: optimizeLegibility;
   }
   ::selection { background: oklch(0.245 0.008 95 / 0.12); }
-  @media (prefers-color-scheme: dark) { ::selection { background: oklch(1 0 0 / 0.16); } }
+  :root[data-theme="dark"] ::selection { background: oklch(1 0 0 / 0.16); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) ::selection { background: oklch(1 0 0 / 0.16); } }
+  /* Theme switches shouldn't animate every colour on the page. */
+  .switching *, .switching *::before, .switching *::after { transition: none !important; }
 
   main {
     max-width: calc(var(--column) + 48px);
@@ -236,23 +263,61 @@
     left: 50%;
     translate: -50% 0;
   }
-  .examples {
-    list-style: none;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 64px 28px;
-    align-items: end;
+  .examples { list-style: none; padding: 0; display: grid; gap: 28px; }
+
+  /* Each example is a card: a quiet surface, the app on it, and a footer that says what to do. */
+  .card { border-radius: 20px; background: var(--card-bg); overflow: hidden; }
+  .card-stage { display: grid; place-items: center; padding: 56px 40px; min-height: 380px; }
+  .card-footer {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 14px 24px;
+    padding: 18px 24px 20px;
+    box-shadow: inset 0 1px var(--hairline);
   }
-  .example { min-width: 0; }
-  .example.span-2 { grid-column: span 2; }
-  .example .title { display: block; margin-top: 18px; }
-  .example .description { display: block; color: var(--muted); max-width: 46ch; }
-  .example .stage-box { display: grid; place-items: center; }
-  @media (max-width: 880px) {
-    .examples { grid-template-columns: 1fr; }
-    .example.span-2 { grid-column: auto; }
+  .card-footer .title { display: block; }
+  .card-footer .description { display: block; color: var(--muted); max-width: 60ch; }
+  .action {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 32px; padding: 0 12px 0 10px;
+    border-radius: 8px;
+    background: var(--win-bg);
+    box-shadow: var(--elevation);
+    font-size: var(--size-small); font-weight: var(--weight-medium);
+    white-space: nowrap;
+    transition: scale 150ms ease-out, background-color 150ms ease-out;
   }
+  .action::before { content: ""; position: absolute; inset: -6px; }
+  .action:active { scale: 0.96; }
+  .action:disabled { color: var(--faint); cursor: default; scale: 1; }
+  .action .icon { width: 14px; height: 14px; }
+  @media (hover: hover) and (pointer: fine) { .action:not(:disabled):hover { background: var(--chrome-bg); } }
+  @media (max-width: 600px) {
+    .card-stage { padding: 36px 16px; min-height: 0; }
+    .card-footer { padding: 16px; }
+  }
+
+  .browser { width: 100%; max-width: 820px; }
+  .chat-window { width: 100%; max-width: 720px; }
+  .transfer-window { width: 100%; max-width: 420px; }
+  .dash { width: 100%; max-width: 860px; }
+
+  /* Fold, the app behind the splash screen. */
+  .app-home { position: absolute; inset: 46px 0 0; padding: 4px 16px; transition: opacity 260ms ease-out, visibility 260ms; }
+  .launch-screen:not(.is-home) .app-home, .launch-screen.is-home .splash { opacity: 0; visibility: hidden; }
+  .splash { transition: opacity 200ms ease-in, visibility 200ms; }
+  .app-home h3 { margin: 6px 0 2px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+  .app-home .sub { color: var(--muted); margin-bottom: 14px; }
+  .lesson { display: flex; align-items: center; gap: 10px; padding: 8px; margin: 0 -8px; border-radius: 12px; }
+  .lesson + .lesson { margin-top: 2px; }
+  .lesson .thumb { width: 52px; height: 52px; border-radius: 12px; background: var(--photo-bg); display: grid; place-items: center; flex: none; }
+  .lesson .thumb origami-loader { width: 50px; height: 50px; --ol-bg: var(--photo-bg); }
+  .lesson b { display: block; font-weight: 600; }
+  .lesson span { color: var(--muted); font-size: 11.5px; }
+
+  /* Header with the theme switch. */
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+  .theme { display: flex; gap: 18px; padding-top: 1px; }
 
   .mock {
     font-size: 12.5px;
@@ -402,7 +467,7 @@
   .mail:active { cursor: grabbing; }
   .mail-nav { position: relative; z-index: 1; display: flex; justify-content: space-between; padding: 2px 16px 0; color: var(--accent); background: var(--win-bg); }
   .mail-nav span { display: flex; align-items: center; gap: 2px; }
-  .mail-loader { position: absolute; left: 0; right: 0; top: 68px; margin: auto; width: 40px; height: 40px; opacity: 0; transition: opacity 150ms ease-out; }
+  .mail-loader { position: absolute; left: 0; right: 0; top: 74px; margin: auto; width: 30px; height: 30px; opacity: 0; transition: opacity 150ms ease-out; }
   .mail-scroll { position: relative; background: var(--win-bg); transition: transform 320ms cubic-bezier(0.23, 1, 0.32, 1); }
   .mail-scroll.held { transition: none; }
   .mail-title { margin: 6px 16px 8px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
@@ -434,7 +499,7 @@
   }
   .attachment .doc { width: 26px; height: 32px; border-radius: 4px; background: var(--code-bg); display: grid; place-items: center; color: var(--muted); font-size: 8px; font-weight: 700; }
   .thinking { display: flex; align-items: center; gap: 4px; color: var(--muted); }
-  .thinking origami-loader { width: 26px; height: 26px; margin-inline-start: -4px; --ol-stroke: 1.1px; }
+  .thinking origami-loader { width: 24px; height: 24px; margin-inline-start: -4px; --ol-stroke: 1px; --ol-ink: var(--muted); }
   .composer {
     margin: 8px 14px 14px;
     display: flex; align-items: center; gap: 8px;
@@ -455,7 +520,7 @@
   .send-round .icon { width: 14px; height: 14px; stroke-width: 2; }
 
   /* Send files */
-  .transfer-window { height: 400px; display: grid; grid-template-rows: 40px 1fr; }
+  .transfer-window { height: 350px; display: grid; grid-template-rows: 40px 1fr; }
   .panes { display: grid; }
   .pane { grid-area: 1 / 1; padding: 18px; transition: opacity 200ms ease-out, visibility 200ms; }
   .pane:not([data-active]) { opacity: 0; visibility: hidden; }
@@ -471,7 +536,7 @@
   }
   .compose .actions { display: flex; justify-content: flex-end; margin-top: 4px; }
   .sending, .sent { display: grid; place-items: center; align-content: center; gap: 2px; text-align: center; }
-  .sending origami-loader { width: 150px; height: 150px; margin-bottom: 4px; }
+  .sending origami-loader { width: 190px; height: 190px; margin: -20px 0 -16px; }
   .sent .check { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--code-bg); margin-bottom: 8px; }
   .sending .text-button, .sent .text-button { margin-top: 14px; }
 
@@ -559,9 +624,15 @@
 </head>
 <body>
 <main>
-  <header>
-    <h1>origami-loaders</h1>
-    <p>Paper loaders that fold themselves.</p>
+  <header class="top">
+    <div>
+      <h1>origami-loaders</h1>
+      <p>Paper loaders that fold themselves.</p>
+    </div>
+    <div class="theme" role="group" aria-label="Colour theme">
+      <button class="toggle" type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+      <button class="toggle" type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+    </div>
   </header>
 
   <div class="stage" id="stage">
@@ -645,178 +716,192 @@
         <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7"/></symbol>
         <symbol id="i-close" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7m0-7-7 7"/></symbol>
         <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 12.5v-9M4.5 7 8 3.5 11.5 7"/></symbol>
+        <symbol id="i-down" viewBox="0 0 16 16"><path d="M8 3.5v9M4.5 9 8 12.5 11.5 9"/></symbol>
         <symbol id="i-clip" viewBox="0 0 16 16"><path d="M13 7.5 8 12.5a3 3 0 0 1-4.2-4.2l5.3-5.3a2 2 0 0 1 2.8 2.8L6.6 11a1 1 0 0 1-1.4-1.4l4.6-4.6"/></symbol>
         <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></symbol>
         <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7"/></symbol>
       </defs>
     </svg>
     <ul class="examples wide">
-
-      <li class="example span-2">
-        <div class="mock window browser is-loading" id="ex-browser">
-          <div class="tabs">
-            <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
-            <div class="tab">
-              <span class="favicon"><origami-loader model="crane" texture="none" data-start="3" aria-hidden="true"></origami-loader><span class="mark" hidden>P</span></span>
-              <span class="tab-title">Paper Studio</span>
-              <svg class="icon"><use href="#i-close"/></svg>
+      <li class="card">
+        <div class="card-stage">
+          <div class="mock window browser is-loading" id="ex-browser">
+            <div class="tabs">
+              <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+              <div class="tab">
+                <span class="favicon"><origami-loader model="crane" texture="none" data-start="3" style="--ol-ink: var(--muted)" aria-hidden="true"></origami-loader><span class="mark" hidden>P</span></span>
+                <span class="tab-title">Paper Studio</span>
+                <svg class="icon"><use href="#i-close"/></svg>
+              </div>
             </div>
-          </div>
-          <div class="toolbar">
-            <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-left"/></svg></span>
-            <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-right"/></svg></span>
-            <button class="icon-button" type="button" id="browser-reload" aria-label="Reload the page"><svg class="icon"><use href="#i-reload"/></svg></button>
-            <div class="address"><svg class="icon small"><use href="#i-lock"/></svg><span><b>paper.studio</b>/shop</span></div>
-          </div>
-          <div class="site">
-            <div class="site-nav"><span class="logo">Paper Studio</span><nav><span>Shop</span><span>Workshops</span><span>Journal</span><span>About</span></nav></div>
-            <div class="site-body">
-              <div class="site-loading"><origami-loader model="crane" data-start="6" aria-label="Loading paper.studio"></origami-loader></div>
-              <div class="site-content">
-                <div><p class="site-hero">Objects folded from a single sheet.</p><p class="muted">Made by hand in our Lisbon studio. Ships in a flat envelope.</p></div>
-                <div class="products">
-                  <div class="product"><div class="photo"><origami-loader model="crane" look="paper" progress="1" style="--ol-front: oklch(0.64 0.16 33)" aria-hidden="true"></origami-loader></div><div class="row"><span>Crane mobile</span><span class="muted tabular">€48</span></div></div>
-                  <div class="product"><div class="photo"><origami-loader model="plane" look="paper" progress="1" style="--ol-front: oklch(0.72 0.1 85)" aria-hidden="true"></origami-loader></div><div class="row"><span>Desk dart</span><span class="muted tabular">€18</span></div></div>
-                  <div class="product"><div class="photo"><origami-loader model="crane" look="paper" progress="0.615" style="--ol-front: oklch(0.6 0.06 160)" aria-hidden="true"></origami-loader></div><div class="row"><span>Bird base print</span><span class="muted tabular">€32</span></div></div>
+            <div class="toolbar">
+              <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-left"/></svg></span>
+              <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-right"/></svg></span>
+              <button class="icon-button" type="button" id="browser-reload" aria-label="Reload the page"><svg class="icon"><use href="#i-reload"/></svg></button>
+              <div class="address"><svg class="icon small"><use href="#i-lock"/></svg><span><b>paper.studio</b>/shop</span></div>
+            </div>
+            <div class="site">
+              <div class="site-nav"><span class="logo">Paper Studio</span><nav><span>Shop</span><span>Workshops</span><span>Journal</span><span>About</span></nav></div>
+              <div class="site-body">
+                <div class="site-loading"><origami-loader model="crane" look="paper" data-start="6" style="--ol-front: oklch(0.64 0.16 33)" aria-label="Loading paper.studio"></origami-loader></div>
+                <div class="site-content">
+                  <div><p class="site-hero">Objects folded from a single sheet.</p><p class="muted">Made by hand in our Lisbon studio. Ships in a flat envelope.</p></div>
+                  <div class="products">
+                    <div class="product"><div class="photo"><origami-loader model="crane" look="paper" progress="1" style="--ol-front: oklch(0.64 0.16 33)" aria-hidden="true"></origami-loader></div><div class="row"><span>Crane mobile</span><span class="muted tabular">€48</span></div></div>
+                    <div class="product"><div class="photo"><origami-loader model="plane" look="paper" progress="1" style="--ol-front: oklch(0.72 0.1 85)" aria-hidden="true"></origami-loader></div><div class="row"><span>Desk dart</span><span class="muted tabular">€18</span></div></div>
+                    <div class="product"><div class="photo"><origami-loader model="crane" look="paper" progress="0.615" style="--ol-front: oklch(0.6 0.06 160)" aria-hidden="true"></origami-loader></div><div class="row"><span>Bird base print</span><span class="muted tabular">€32</span></div></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <span class="title">Page load</span>
-        <span class="description">A small crane holds the page while it loads, and folds in the tab too. Reload to see it again.</span>
+        <div class="card-footer">
+          <div><span class="title">Page load</span><span class="description">A small crane in the shop's red holds the page while it loads. The tab icon folds too.</span></div>
+          <button class="action" type="button" id="act-reload"><svg class="icon"><use href="#i-reload"/></svg>Reload</button>
+        </div>
       </li>
-
-      <li class="example">
-        <div class="stage-box">
-          <div class="mock phone" aria-hidden="true">
-            <div class="screen launch-screen">
-              <div class="island"></div>
-              <div class="status"><span class="tabular">9:41</span><span class="icons">
-                <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
-                <svg width="15" height="11" viewBox="0 0 15 11"><path d="M7.5 2.2c2.2 0 4.2.9 5.7 2.3l1.1-1.1A9.6 9.6 0 0 0 7.5.6 9.6 9.6 0 0 0 .7 3.4l1.1 1.1a8 8 0 0 1 5.7-2.3Zm0 3.2c1.3 0 2.5.5 3.4 1.4l1.1-1.1a6.3 6.3 0 0 0-9 0l1.1 1.1c.9-.9 2.1-1.4 3.4-1.4Zm0 3.2a1.6 1.6 0 0 0-1.1.5L7.5 10.2l1.1-1.1a1.6 1.6 0 0 0-1.1-.5Z"/></svg>
-                <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="16" height="8" rx="2"/><path d="M23 4v4c.8-.3 1.3-1.1 1.3-2S23.8 4.3 23 4Z" opacity="0.4"/></svg>
-              </span></div>
-              <div class="splash">
-                <origami-loader model="crane" look="paper" data-start="12" style="--ol-front: oklch(0.64 0.16 33)"></origami-loader>
-                <span class="wordmark">Fold</span>
-                <span class="tagline">Origami, one step at a time</span>
+      <li class="card">
+        <div class="card-stage">
+                    <div class="mock phone" aria-hidden="true">
+              <div class="screen launch-screen" id="launch">
+                <div class="island"></div>
+                <div class="status"><span class="tabular">9:41</span><span class="icons">
+                  <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+                  <svg width="15" height="11" viewBox="0 0 15 11"><path d="M7.5 2.2c2.2 0 4.2.9 5.7 2.3l1.1-1.1A9.6 9.6 0 0 0 7.5.6 9.6 9.6 0 0 0 .7 3.4l1.1 1.1a8 8 0 0 1 5.7-2.3Zm0 3.2c1.3 0 2.5.5 3.4 1.4l1.1-1.1a6.3 6.3 0 0 0-9 0l1.1 1.1c.9-.9 2.1-1.4 3.4-1.4Zm0 3.2a1.6 1.6 0 0 0-1.1.5L7.5 10.2l1.1-1.1a1.6 1.6 0 0 0-1.1-.5Z"/></svg>
+                  <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="16" height="8" rx="2"/><path d="M23 4v4c.8-.3 1.3-1.1 1.3-2S23.8 4.3 23 4Z" opacity="0.4"/></svg>
+                </span></div>
+                <div class="splash">
+                  <origami-loader model="crane" look="paper" data-start="12" style="--ol-front: oklch(0.64 0.16 33)"></origami-loader>
+                  <span class="wordmark">Fold</span>
+                  <span class="tagline">Origami, one step at a time</span>
+                </div>
+                <div class="home-bar"></div>
               </div>
-              <div class="home-bar"></div>
             </div>
-          </div>
         </div>
-        <span class="title">App launch</span>
-        <span class="description">The splash screen is the first fold of the day.</span>
+        <div class="card-footer">
+          <div><span class="title">App launch</span><span class="description">The splash screen folds while the app starts, then opens on today's lessons.</span></div>
+          <button class="action" type="button" id="act-relaunch"><svg class="icon"><use href="#i-reload"/></svg>Relaunch</button>
+        </div>
       </li>
-
-      <li class="example">
-        <div class="stage-box">
-          <div class="mock phone">
-            <div class="screen mail" id="mail" tabindex="0" role="button" aria-label="Mail inbox. Drag down, or press Enter, to check for new mail.">
-              <div class="island"></div>
-              <div class="status" aria-hidden="true"><span class="tabular">9:41</span><span class="icons">
-                <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
-                <svg width="15" height="11" viewBox="0 0 15 11"><path d="M7.5 2.2c2.2 0 4.2.9 5.7 2.3l1.1-1.1A9.6 9.6 0 0 0 7.5.6 9.6 9.6 0 0 0 .7 3.4l1.1 1.1a8 8 0 0 1 5.7-2.3Zm0 3.2c1.3 0 2.5.5 3.4 1.4l1.1-1.1a6.3 6.3 0 0 0-9 0l1.1 1.1c.9-.9 2.1-1.4 3.4-1.4Zm0 3.2a1.6 1.6 0 0 0-1.1.5L7.5 10.2l1.1-1.1a1.6 1.6 0 0 0-1.1-.5Z"/></svg>
-                <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="16" height="8" rx="2"/><path d="M23 4v4c.8-.3 1.3-1.1 1.3-2S23.8 4.3 23 4Z" opacity="0.4"/></svg>
-              </span></div>
-              <div class="mail-nav" aria-hidden="true"><span><svg class="icon"><use href="#i-left"/></svg>Mailboxes</span><span>Edit</span></div>
-              <origami-loader class="mail-loader" id="mail-loader" model="crane" progress="0" aria-hidden="true"></origami-loader>
-              <div class="mail-scroll" id="mail-scroll" aria-hidden="true">
-                <h3 class="mail-title">Inbox</h3>
-                <div class="search"><svg class="icon small"><use href="#i-search"/></svg>Search</div>
-                <ul class="mail-list" id="mail-list">
-                  <li><div class="item"><span></span><div><div class="top"><b>Maya Chen</b><time>9:24</time></div><div class="subject">Spring catalogue</div><div class="preview">Here's the final PDF with the new paper samples. The kraft one prints better than I expected.</div></div></div></li>
-                  <li><div class="item"><span></span><div><div class="top"><b>Studio Kami</b><time>8:51</time></div><div class="subject">Your order has shipped</div><div class="preview">200 sheets of 15 cm kami are on their way. Tracking number inside.</div></div></div></li>
-                  <li><div class="item"><span></span><div><div class="top"><b>Hiro Tanaka</b><time>Yesterday</time></div><div class="subject">Crane workshop</div><div class="preview">Saturday works for me. I'll bring the washi and a bone folder for everyone.</div></div></div></li>
-                  <li><div class="item"><span></span><div><div class="top"><b>Ana Ruiz</b><time>Yesterday</time></div><div class="subject">Re: Lamp prototype</div><div class="preview">The folds hold up under heat. Next is a thicker sheet for the shade.</div></div></div></li>
-                  <li><div class="item"><span></span><div><div class="top"><b>Paper Weekly</b><time>Mon</time></div><div class="subject">Issue 42: curved creases</div><div class="preview">This week, how a single curved fold makes a sheet stand up on its own.</div></div></div></li>
-                </ul>
+      <li class="card">
+        <div class="card-stage">
+                    <div class="mock phone">
+              <div class="screen mail" id="mail" tabindex="0" role="button" aria-label="Mail inbox. Drag down, or press Enter, to check for new mail.">
+                <div class="island"></div>
+                <div class="status" aria-hidden="true"><span class="tabular">9:41</span><span class="icons">
+                  <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+                  <svg width="15" height="11" viewBox="0 0 15 11"><path d="M7.5 2.2c2.2 0 4.2.9 5.7 2.3l1.1-1.1A9.6 9.6 0 0 0 7.5.6 9.6 9.6 0 0 0 .7 3.4l1.1 1.1a8 8 0 0 1 5.7-2.3Zm0 3.2c1.3 0 2.5.5 3.4 1.4l1.1-1.1a6.3 6.3 0 0 0-9 0l1.1 1.1c.9-.9 2.1-1.4 3.4-1.4Zm0 3.2a1.6 1.6 0 0 0-1.1.5L7.5 10.2l1.1-1.1a1.6 1.6 0 0 0-1.1-.5Z"/></svg>
+                  <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="16" height="8" rx="2"/><path d="M23 4v4c.8-.3 1.3-1.1 1.3-2S23.8 4.3 23 4Z" opacity="0.4"/></svg>
+                </span></div>
+                <div class="mail-nav" aria-hidden="true"><span><svg class="icon"><use href="#i-left"/></svg>Mailboxes</span><span>Edit</span></div>
+                <origami-loader class="mail-loader" id="mail-loader" model="crane" progress="0" texture="none" style="--ol-ink: oklch(0.6 0.005 260); --ol-stroke: 1px" aria-hidden="true"></origami-loader>
+                <div class="mail-scroll" id="mail-scroll" aria-hidden="true">
+                  <h3 class="mail-title">Inbox</h3>
+                  <div class="search"><svg class="icon small"><use href="#i-search"/></svg>Search</div>
+                  <ul class="mail-list" id="mail-list">
+                    <li><div class="item"><span></span><div><div class="top"><b>Maya Chen</b><time>9:24</time></div><div class="subject">Spring catalogue</div><div class="preview">Here's the final PDF with the new paper samples. The kraft one prints better than I expected.</div></div></div></li>
+                    <li><div class="item"><span></span><div><div class="top"><b>Studio Kami</b><time>8:51</time></div><div class="subject">Your order has shipped</div><div class="preview">200 sheets of 15 cm kami are on their way. Tracking number inside.</div></div></div></li>
+                    <li><div class="item"><span></span><div><div class="top"><b>Hiro Tanaka</b><time>Yesterday</time></div><div class="subject">Crane workshop</div><div class="preview">Saturday works for me. I'll bring the washi and a bone folder for everyone.</div></div></div></li>
+                    <li><div class="item"><span></span><div><div class="top"><b>Ana Ruiz</b><time>Yesterday</time></div><div class="subject">Re: Lamp prototype</div><div class="preview">The folds hold up under heat. Next is a thicker sheet for the shade.</div></div></div></li>
+                    <li><div class="item"><span></span><div><div class="top"><b>Paper Weekly</b><time>Mon</time></div><div class="subject">Issue 42: curved creases</div><div class="preview">This week, how a single curved fold makes a sheet stand up on its own.</div></div></div></li>
+                  </ul>
+                </div>
+                <div class="home-bar"></div>
               </div>
-              <div class="home-bar"></div>
+            </div>
+        </div>
+        <div class="card-footer">
+          <div><span class="title">Pull to refresh</span><span class="description">Drag the inbox down and let go. A small grey crane folds under your finger, like the native spinner.</span></div>
+          <button class="action" type="button" id="act-refresh"><svg class="icon"><use href="#i-down"/></svg>Refresh</button>
+        </div>
+      </li>
+      <li class="card">
+        <div class="card-stage">
+          <div class="mock window chat-window" id="ex-chat">
+            <div class="chrome"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">Assistant</span></div>
+            <div class="thread" id="thread" aria-live="polite">
+              <div class="attachment"><span class="doc">PDF</span><span><span style="display:block">Lease agreement.pdf</span><span class="muted">12 pages</span></span></div>
+              <div class="msg user">Can you summarise this contract in three lines?</div>
+            </div>
+            <form class="composer" id="composer">
+              <svg class="icon" style="color:var(--muted)" aria-hidden="true"><use href="#i-clip"/></svg>
+              <input id="chat-input" type="text" placeholder="Ask a follow-up" autocomplete="off" aria-label="Message the assistant">
+              <button class="send-round" type="submit" aria-label="Send message"><svg class="icon"><use href="#i-up"/></svg></button>
+            </form>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div><span class="title">Waiting for a reply</span><span class="description">A tiny crane sits where the answer will appear. Ask a follow-up to see it again.</span></div>
+          <button class="action" type="button" id="act-ask"><svg class="icon"><use href="#i-up"/></svg>Ask a follow-up</button>
+        </div>
+      </li>
+      <li class="card">
+        <div class="card-stage">
+          <div class="mock window transfer-window" id="ex-transfer">
+            <div class="chrome"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">Send files</span></div>
+            <div class="panes">
+              <div class="pane compose" id="tx-compose" data-active>
+                <div class="file-row"><span class="doc">PDF</span><span><span style="display:block">Spring catalogue.pdf</span><span class="muted tabular">4.2 MB</span></span></div>
+                <label class="field">To<input type="email" value="maya@studio.co" tabindex="-1" readonly></label>
+                <label class="field">Message<input type="text" value="Final version, with the new samples." tabindex="-1" readonly></label>
+                <div class="actions"><button class="primary" type="button" id="tx-send">Send</button></div>
+              </div>
+              <div class="pane sending" id="tx-sending">
+                <origami-loader model="plane" look="paper" id="tx-loader" progress="0" style="--ol-front: oklch(0.58 0.12 250); --ol-back: oklch(0.98 0.004 250)" aria-label="Sending Spring catalogue.pdf"></origami-loader>
+                <span>Sending to maya@studio.co</span>
+                <span class="muted tabular" id="tx-progress">0% · 0.0 of 4.2 MB</span>
+                <button class="text-button" type="button" id="tx-cancel">Cancel</button>
+              </div>
+              <div class="pane sent" id="tx-sent">
+                <span class="check"><svg class="icon"><use href="#i-check"/></svg></span>
+                <span>Sent</span>
+                <span class="muted">Maya will get a link to download it.</span>
+                <button class="text-button" type="button" id="tx-again">Send another</button>
+              </div>
             </div>
           </div>
         </div>
-        <span class="title">Pull to refresh</span>
-        <span class="description">Drag the inbox down. The paper folds as you pull, and new mail arrives when you let go.</span>
-      </li>
-
-      <li class="example span-2">
-        <div class="mock window chat-window" id="ex-chat">
-          <div class="chrome"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">Assistant</span></div>
-          <div class="thread" id="thread" aria-live="polite">
-            <div class="attachment"><span class="doc">PDF</span><span><span style="display:block">Lease agreement.pdf</span><span class="muted">12 pages</span></span></div>
-            <div class="msg user">Can you summarise this contract in three lines?</div>
-          </div>
-          <form class="composer" id="composer">
-            <svg class="icon" style="color:var(--muted)" aria-hidden="true"><use href="#i-clip"/></svg>
-            <input id="chat-input" type="text" placeholder="Ask a follow-up" autocomplete="off" aria-label="Message the assistant">
-            <button class="send-round" type="submit" aria-label="Send message"><svg class="icon"><use href="#i-up"/></svg></button>
-          </form>
+        <div class="card-footer">
+          <div><span class="title">Sending a file</span><span class="description">The plane folds with the upload, loops once, and flies off when the file is sent.</span></div>
+          <button class="action" type="button" id="act-send"><svg class="icon"><use href="#i-up"/></svg>Send</button>
         </div>
-        <span class="title">Waiting for a reply</span>
-        <span class="description">A tiny crane while the answer is on its way. Ask a follow-up to see it again.</span>
       </li>
-
-      <li class="example">
-        <div class="mock window transfer-window" id="ex-transfer">
-          <div class="chrome"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">Send files</span></div>
-          <div class="panes">
-            <div class="pane compose" id="tx-compose" data-active>
-              <div class="file-row"><span class="doc">PDF</span><span><span style="display:block">Spring catalogue.pdf</span><span class="muted tabular">4.2 MB</span></span></div>
-              <label class="field">To<input type="email" value="maya@studio.co" tabindex="-1" readonly></label>
-              <label class="field">Message<input type="text" value="Final version, with the new samples." tabindex="-1" readonly></label>
-              <div class="actions"><button class="primary" type="button" id="tx-send">Send</button></div>
+      <li class="card">
+        <div class="card-stage">
+          <div class="mock window dash" id="ex-deploy">
+            <div class="tabs">
+              <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+              <div class="tab"><span class="favicon"><span class="mark">A</span></span><span class="tab-title">Deployments · acme/web</span><svg class="icon"><use href="#i-close"/></svg></div>
             </div>
-            <div class="pane sending" id="tx-sending">
-              <origami-loader model="plane" id="tx-loader" progress="0" aria-label="Sending Spring catalogue.pdf"></origami-loader>
-              <span>Sending to maya@studio.co</span>
-              <span class="muted tabular" id="tx-progress">0% · 0.0 of 4.2 MB</span>
-              <button class="text-button" type="button" id="tx-cancel">Cancel</button>
+            <div class="toolbar">
+              <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-left"/></svg></span>
+              <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-right"/></svg></span>
+              <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-reload"/></svg></span>
+              <div class="address"><svg class="icon small"><use href="#i-lock"/></svg><span><b>deploy.acme.dev</b>/acme/web</span></div>
             </div>
-            <div class="pane sent" id="tx-sent">
-              <span class="check"><svg class="icon"><use href="#i-check"/></svg></span>
-              <span>Sent</span>
-              <span class="muted">Maya will get a link to download it.</span>
-              <button class="text-button" type="button" id="tx-again">Send another</button>
+            <div class="dash-body">
+              <div class="dash-head"><div><div>acme/web</div><div class="sub">Production deployments</div></div><button class="primary" type="button" id="redeploy">Redeploy</button></div>
+              <ul class="deploys">
+                <li class="current">
+                  <span class="state"><origami-loader model="crane" id="deploy-loader" progress="0" texture="none" style="--ol-ink: var(--muted)" aria-label="Deployment in progress"></origami-loader><i class="dot ok" id="deploy-dot" hidden></i><span id="deploy-state">Queued</span></span>
+                  <span class="commit"><span>Fix checkout copy</span><span class="meta">main · 4f2c1ab</span></span>
+                  <span class="avatar">RA</span>
+                  <time id="deploy-time">0:00</time>
+                </li>
+                <li><span class="state"><i class="dot ok"></i>Ready</span><span class="commit"><span>Update pricing page</span><span class="meta">main · 9b1e0d2</span></span><span class="avatar">MC</span><time>2h ago</time></li>
+                <li><span class="state"><i class="dot ok"></i>Ready</span><span class="commit"><span>Add the paper crane loader</span><span class="meta">main · 1a7c3e9</span></span><span class="avatar">RA</span><time>Yesterday</time></li>
+                <li><span class="state"><i class="dot err"></i>Error</span><span class="commit"><span>Try a new image CDN</span><span class="meta">exp/cdn · 77de012</span></span><span class="avatar">HT</span><time>2d ago</time></li>
+              </ul>
             </div>
           </div>
         </div>
-        <span class="title">Sending a file</span>
-        <span class="description">The plane folds with the upload and leaves when the file is sent.</span>
-      </li>
-
-      <li class="example span-2">
-        <div class="mock window dash" id="ex-deploy">
-          <div class="tabs">
-            <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
-            <div class="tab"><span class="favicon"><span class="mark">A</span></span><span class="tab-title">Deployments · acme/web</span><svg class="icon"><use href="#i-close"/></svg></div>
-          </div>
-          <div class="toolbar">
-            <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-left"/></svg></span>
-            <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-right"/></svg></span>
-            <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-reload"/></svg></span>
-            <div class="address"><svg class="icon small"><use href="#i-lock"/></svg><span><b>deploy.acme.dev</b>/acme/web</span></div>
-          </div>
-          <div class="dash-body">
-            <div class="dash-head"><div><div>acme/web</div><div class="sub">Production deployments</div></div><button class="primary" type="button" id="redeploy">Redeploy</button></div>
-            <ul class="deploys">
-              <li class="current">
-                <span class="state"><origami-loader model="crane" id="deploy-loader" progress="0" aria-label="Deployment in progress"></origami-loader><i class="dot ok" id="deploy-dot" hidden></i><span id="deploy-state">Queued</span></span>
-                <span class="commit"><span>Fix checkout copy</span><span class="meta">main · 4f2c1ab</span></span>
-                <span class="avatar">RA</span>
-                <time id="deploy-time">0:00</time>
-              </li>
-              <li><span class="state"><i class="dot ok"></i>Ready</span><span class="commit"><span>Update pricing page</span><span class="meta">main · 9b1e0d2</span></span><span class="avatar">MC</span><time>2h ago</time></li>
-              <li><span class="state"><i class="dot ok"></i>Ready</span><span class="commit"><span>Add the paper crane loader</span><span class="meta">main · 1a7c3e9</span></span><span class="avatar">RA</span><time>Yesterday</time></li>
-              <li><span class="state"><i class="dot err"></i>Error</span><span class="commit"><span>Try a new image CDN</span><span class="meta">exp/cdn · 77de012</span></span><span class="avatar">HT</span><time>2d ago</time></li>
-            </ul>
-          </div>
+        <div class="card-footer">
+          <div><span class="title">Deploy</span><span class="description">Each build stage is a span of the fold, so the crane in the status column is a real progress bar.</span></div>
+          <button class="action" type="button" id="act-redeploy"><svg class="icon"><use href="#i-reload"/></svg>Redeploy</button>
         </div>
-        <span class="title">Deploy</span>
-        <span class="description">Each build stage is a span of the fold, so the crane is a real progress bar. It flies off when the site is live.</span>
       </li>
-
     </ul>
   </section>
 
@@ -862,6 +947,30 @@
 <!-- OL_SCRIPT -->
 <script>
 (function () {
+  // ---- Theme: an explicit choice beats the system, and every loader follows it.
+  var root = document.documentElement;
+  var systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+  function effectiveTheme() { return root.dataset.theme || (systemDark.matches ? 'dark' : 'light'); }
+  function paintTheme() {
+    var t = effectiveTheme();
+    document.querySelectorAll('origami-loader').forEach(function (l) { l.setAttribute('theme', t); });
+    document.querySelectorAll('[data-theme-choice]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-theme-choice') === t));
+    });
+    document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) { m.setAttribute('content', t === 'dark' ? '#161615' : '#fdfdfc'); });
+  }
+  document.querySelectorAll('[data-theme-choice]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      root.classList.add('switching');
+      root.dataset.theme = b.getAttribute('data-theme-choice');
+      try { localStorage.setItem('ol-theme', root.dataset.theme); } catch (e) {}
+      paintTheme();
+      requestAnimationFrame(function () { requestAnimationFrame(function () { root.classList.remove('switching'); }); });
+    });
+  });
+  systemDark.addEventListener('change', function () { if (!root.dataset.theme) paintTheme(); });
+  paintTheme();
+
   var hero = document.getElementById('hero');
   var number = document.getElementById('step-number');
   var label = document.getElementById('step-label');
@@ -1095,6 +1204,8 @@
     row.className = 'thinking';
     var loader = document.createElement('origami-loader');
     loader.setAttribute('model', 'crane');
+    loader.setAttribute('theme', effectiveTheme());
+    loader.setAttribute('texture', 'none');
     loader.setAttribute('aria-label', 'Writing a reply');
     row.appendChild(loader);
     row.appendChild(document.createTextNode(label));
@@ -1165,7 +1276,9 @@
   var BUILD_SECONDS = 41;
   function clock(s) { s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   function deploy() {
+    if (redeploy.disabled) return;
     redeploy.disabled = true;
+    document.getElementById('act-redeploy').disabled = true;
     deployDot.hidden = true;
     deployLoader.hidden = false;
     deployLoader.setAttribute('progress', '0');
@@ -1181,9 +1294,35 @@
     deployState.textContent = 'Ready';
     deployTime.textContent = clock(BUILD_SECONDS);
     redeploy.disabled = false;
+    document.getElementById('act-redeploy').disabled = false;
   });
   onceVisible(document.getElementById('ex-deploy'), deploy);
   redeploy.addEventListener('click', deploy);
+
+  // App launch: the splash folds, then the app opens.
+  var launchScreen = document.getElementById('launch');
+  var splashLoader = launchScreen.querySelector('.splash origami-loader');
+  var launchTimer;
+  function launch() {
+    clearTimeout(launchTimer);
+    launchScreen.classList.remove('is-home');
+    splashLoader.removeAttribute('paused');
+    splashLoader.seek(9);
+    launchTimer = setTimeout(function () { launchScreen.classList.add('is-home'); splashLoader.setAttribute('paused', ''); }, 4200);
+  }
+  onceVisible(launchScreen, launch);
+
+  // Card footers: one clear action each.
+  document.getElementById('act-reload').addEventListener('click', loadPage);
+  document.getElementById('act-relaunch').addEventListener('click', launch);
+  document.getElementById('act-refresh').addEventListener('click', function () { setPull(THRESHOLD); refresh(); });
+  document.getElementById('act-ask').addEventListener('click', function () { composer.requestSubmit(); });
+  document.getElementById('act-send').addEventListener('click', function () {
+    if (cancelSend) return;
+    if (!tx.compose.hasAttribute('data-active')) showPane('compose');
+    document.getElementById('tx-send').click();
+  });
+  document.getElementById('act-redeploy').addEventListener('click', deploy);
 
   syncPlay();
   showStep(hero.currentStep);
