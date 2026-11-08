@@ -1,7 +1,7 @@
 // Build the library bundles, type declarations and the self-contained demo page.
 import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
@@ -49,6 +49,8 @@ async function main() {
   html = html.replace('<!-- OL_SCRIPT -->', () => inline);
   mkdirSync(p('demo/dist'), { recursive: true });
   writeFileSync(p('demo/dist/index.html'), html);
+  // Example backgrounds: ASCII-baked photos and Paper Shaders grain panels.
+  cpSync(p('demo/assets'), p('demo/dist/assets'), { recursive: true });
 
   const esm = readFileSync(p('dist/origami-loaders.js'));
   const unminified = await build({ ...shared, minify: false, format: 'esm', splitting: true, write: false, outdir: 'out' });
