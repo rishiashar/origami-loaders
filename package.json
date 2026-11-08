@@ -1,21 +1,47 @@
 {
   "name": "origami-loaders",
-  "version": "0.0.1",
-  "description": "Loaders that fold. 3D origami animations rendered as lightweight SVG.",
+  "version": "0.1.0",
+  "description": "A paper crane that folds itself. 3D origami loaders as live SVG, zero dependencies.",
   "type": "module",
   "license": "MIT",
-  "repository": "github:rishiashar/origami-loaders",
+  "keywords": [
+    "loader",
+    "spinner",
+    "progress",
+    "origami",
+    "svg",
+    "web-component",
+    "custom-element",
+    "animation",
+    "paper",
+    "crane"
+  ],
+  "homepage": "https://github.com/rishiashar/origami-loaders#readme",
+  "bugs": {
+    "url": "https://github.com/rishiashar/origami-loaders/issues"
+  },
+  "author": "rishiashar",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rishiashar/origami-loaders.git"
+  },
   "main": "./dist/origami-loaders.js",
   "module": "./dist/origami-loaders.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
+      "import": "./dist/origami-loaders.js",
       "default": "./dist/origami-loaders.js"
-    }
+    },
+    "./iife": "./dist/origami-loaders.iife.js",
+    "./package.json": "./package.json"
   },
+  "unpkg": "dist/origami-loaders.iife.js",
+  "jsdelivr": "dist/origami-loaders.iife.js",
   "files": [
-    "dist"
+    "dist",
+    "THIRD_PARTY_NOTICES.txt"
   ],
   "sideEffects": true,
   "scripts": {
@@ -23,9 +49,18 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "demo": "npm run build && node -e \"console.log(process.cwd()+'/demo/dist/index.html')\"",
-    "capture": "node scripts/capture.mjs"
+    "capture": "node scripts/capture.mjs",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "devDependencies": {
+    "@paper-design/shaders": "0.0.82",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"

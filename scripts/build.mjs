@@ -1,7 +1,7 @@
 // Build the library bundles, type declarations and the self-contained demo page.
 import { build } from 'esbuild';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
@@ -22,7 +22,11 @@ async function main() {
   rmSync(p('dist'), { recursive: true, force: true });
   rmSync(p('demo/dist'), { recursive: true, force: true });
 
-  await build({ ...shared, format: 'esm', outfile: p('dist/origami-loaders.js') });
+  // ESM: Paper Shaders' paper texture lands in its own chunk, loaded only when a loader needs grain.
+  await build({
+    ...shared, format: 'esm', splitting: true, outdir: p('dist'),
+    entryNames: 'origami-loaders', chunkNames: 'chunks/[name]-[hash]',
+  });
   await build({
     ...shared,
     format: 'iife',
@@ -47,11 +51,15 @@ async function main() {
   writeFileSync(p('demo/dist/index.html'), html);
 
   const esm = readFileSync(p('dist/origami-loaders.js'));
-  const unminified = await build({ ...shared, minify: false, format: 'esm', write: false, outfile: 'out.js' });
-  const raw = unminified.outputFiles[0].contents.length;
+  const unminified = await build({ ...shared, minify: false, format: 'esm', splitting: true, write: false, outdir: 'out' });
+  const raw = unminified.outputFiles.find((f) => f.path.endsWith('index.js'))?.contents.length ?? unminified.outputFiles[0].contents.length;
   const gz = gzipSync(esm, { level: 9 }).length;
   const kb = (n) => (n / 1024).toFixed(2) + ' kB';
   console.log(`dist/origami-loaders.js   ${esm.length} B (${kb(esm.length)}) minified (${raw} B unminified), ${gz} B (${kb(gz)}) gzip`);
+  for (const f of readdirSync(p('dist/chunks'))) {
+    const buf = readFileSync(p('dist/chunks', f));
+    console.log(`dist/chunks/${f}   ${(buf.length / 1024).toFixed(2)} kB minified, ${(gzipSync(buf, { level: 9 }).length / 1024).toFixed(2)} kB gzip (loaded on demand)`);
+  }
   console.log(`demo: ${p('demo/dist/index.html')}`);
 }
 

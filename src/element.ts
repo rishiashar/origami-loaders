@@ -108,7 +108,8 @@ export class OrigamiLoader extends HTMLElement {
     this.svg.dataset.tex = off ? 'off' : 'loading';
     if (!scene || off) return;
     const px = (this.getBoundingClientRect().width || 160) * (globalThis.devicePixelRatio || 1) * (2 / 3.2);
-    paperTexture(textureSize(px)).then((href) => {
+    const kind = this.getAttribute('texture') === 'grain' ? 'grain' : 'paper';
+    paperTexture(textureSize(px), kind).then((href) => {
       if (scene !== this.scene || !href) return;
       scene.setTexture(href);
       if (this.svg.dataset.tex !== 'off') this.svg.dataset.tex = 'on';

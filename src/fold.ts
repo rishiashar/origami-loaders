@@ -181,14 +181,20 @@ function gaussNewton(x0: number[], f: (x: number[]) => number[]): number[] {
 }
 
 export class Folder {
-  faces: Sim[] = [{ id: 0, poly: [[-1, -1], [1, -1], [1, 1], [-1, 1]], T: identity(), level: 0, rank: 0, hist: [] }];
+  faces: Sim[];
   readonly steps: Step[] = [];
   readonly chords: { a: P2; b: P2; step: number }[] = [];
   nextId = 1;
   readonly pose: Pose;
 
-  constructor(pose: Partial<Pose> = {}) {
+  /**
+   * @param pose  Starting pose of the model.
+   * @param sheet The paper, counter-clockwise, inside [-1, 1]² (that square is
+   *              what the paper texture covers). Defaults to the full square.
+   */
+  constructor(pose: Partial<Pose> = {}, sheet: P2[] = [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
     this.pose = { ...defaultPose, ...pose };
+    this.faces = [{ id: 0, poly: ccw(sheet), T: identity(), level: 0, rank: 0, hist: [] }];
   }
 
   step(meta: StepMeta, build?: (s: StepBuilder) => void): this {

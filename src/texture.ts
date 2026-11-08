@@ -1,7 +1,9 @@
 /**
- * Procedural paper, generated once per page and shared by every loader.
+ * Paper grain, generated once per page and shared by every loader.
  *
- * A tiny CPU "shader" pass builds a height field — fine tooth plus pressed-in
+ * First choice is Paper Shaders' paper-texture shader (WebGL, loaded lazily
+ * from its own chunk, see paper-shader.ts). Where WebGL is unavailable, a tiny
+ * CPU "shader" pass builds a height field — fine tooth plus pressed-in
  * fibres — lights its bumps like a relief, adds low-frequency cloudiness (the
  * uneven density of real paper), and bakes it into an image of light/dark
  * grain with alpha. The scene maps that image onto every face in sheet space,
@@ -11,16 +13,23 @@
  * about the same size in device pixels and never shimmers when it moves.
  */
 
-const cache = new Map<number, Promise<string>>();
+const cache = new Map<string, Promise<string>>();
 
 /** Texture edge length in pixels for a sheet drawn `sheetPx` device pixels wide. */
 export const textureSize = (sheetPx: number) => (sheetPx <= 220 ? 256 : sheetPx <= 460 ? 512 : 1024);
 
-export function paperTexture(size: number): Promise<string> {
-  let p = cache.get(size);
+export type TextureKind = 'paper' | 'grain';
+
+export function paperTexture(size: number, kind: TextureKind = 'paper'): Promise<string> {
+  const key = `${kind}:${size}`;
+  let p = cache.get(key);
   if (!p) {
-    p = new Promise((resolve) => setTimeout(() => generate(size, resolve), 0));
-    cache.set(size, p);
+    const cpu = () => new Promise<string>((resolve) => setTimeout(() => generate(size, resolve), 0));
+    p = kind === 'grain' ? cpu() : import('./paper-shader')
+      .then((m) => m.renderPaperShader(size))
+      .catch(() => undefined)
+      .then((href) => href ?? cpu());
+    cache.set(key, p);
   }
   return p;
 }

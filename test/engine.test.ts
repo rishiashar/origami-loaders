@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Folder } from '../src/fold';
 import { apply } from '../src/math';
 import { buildCrane } from '../src/models/crane';
+import { buildPlane } from '../src/models/plane';
 import { Player } from '../src/player';
 
 const crane = buildCrane();
@@ -79,5 +80,41 @@ describe('crane', () => {
       }
     }
     expect(worst).toBeLessThan(2e-3);
+  });
+});
+
+describe('plane', () => {
+  const plane = buildPlane();
+  const pp = new Player(plane);
+
+  it('starts from an A4-proportioned sheet', () => {
+    const xs = plane.verts.map((v) => v[0]);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(Math.SQRT2);
+  });
+
+  it('never tears the paper, start to finish', () => {
+    let worst = 0;
+    for (let k = 0; k < plane.steps.length; k++) {
+      for (const u of [0.2, 0.5, 0.8, 1]) {
+        const f = pp.evaluate(plane.starts[k] + plane.steps[k].duration * u - 1e-9);
+        for (const e of plane.edges) {
+          if (e.faces.length < 2) continue;
+          for (const v of [e.a, e.b]) {
+            const [x, y] = plane.verts[v];
+            const A = apply(f.T[e.faces[0]], x, y, 0), B = apply(f.T[e.faces[1]], x, y, 0);
+            worst = Math.max(worst, Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]));
+          }
+        }
+      }
+    }
+    expect(worst).toBeLessThan(1e-6);
+  });
+
+  it('opens the wings to either side of the body', () => {
+    const k = plane.steps.findIndex((s) => s.label === 'Open the wings');
+    const f = pp.evaluate(plane.starts[k] + plane.steps[k].duration - 1e-9);
+    const zs = f.T.map((T) => T[10]);
+    expect(zs.some((nz) => Math.abs(nz) < 0.2)).toBe(true); // body faces stand on edge…
+    expect(zs.filter((nz) => Math.abs(nz) > 0.9).length).toBeGreaterThan(0); // …wings lie flat
   });
 });

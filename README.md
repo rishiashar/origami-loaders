@@ -7,31 +7,31 @@ A framework-agnostic web component: drop `<origami-loader>` into any page, React
 ## Install
 
 ```sh
-npm install origami-loaders
+npm i origami-loaders
+```
+
+With a bundler, import the package once. It registers the `<origami-loader>` element as a side effect. The `OrigamiLoader` class is also exported.
+
+```js
+import 'origami-loaders';
 ```
 
 ```html
-<script type="module">
-  import 'origami-loaders';
-</script>
-
 <origami-loader look="ink"></origami-loader>
 ```
 
-### CDN
+Without a bundler, load the IIFE build from jsDelivr:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/origami-loaders"></script>
+<script src="https://cdn.jsdelivr.net/npm/origami-loaders"></script>
 <origami-loader look="blueprint" theme="dark"></origami-loader>
 ```
-
-Importing the package registers the `<origami-loader>` custom element as a side effect. The `OrigamiLoader` class is also exported.
 
 ## Attributes
 
 | Attribute  | Values                                   | Default | Description |
 | ---------- | ---------------------------------------- | ------- | ----------- |
-| `model`    | `crane`                                  | `crane` | Which origami model to fold. |
+| `model`    | `crane` \| `plane`                       | `crane` | Which origami model to fold. |
 | `look`     | `ink` \| `blueprint` \| `graphite` \| `paper` | `ink`   | Rendering style. |
 | `theme`    | `light` \| `dark` \| `auto`              | `auto`  | `auto` follows `prefers-color-scheme`. |
 | `speed`    | number                                   | `1`     | Playback speed multiplier. |
@@ -74,6 +74,15 @@ el.addEventListener('ol-step', (e) => {
 });
 ```
 
+## Models
+
+- **crane** is the default. It folds all 14 steps of the classic diagram and takes about 25 seconds per loop.
+- **plane** is the classic paper dart. It has about 7 steps and takes about 10 seconds per loop. Select it with `model="plane"`.
+
+```html
+<origami-loader model="plane"></origami-loader>
+```
+
 ## Looks
 
 - **ink** — line art, hidden lines removed.
@@ -89,6 +98,7 @@ The paper crane folds through all 14 steps of the classic diagram, about 25 seco
 - [x] The crane, all 14 steps
 - [x] Four looks, light and dark, recolourable, with procedural paper grain
 - [x] Progress mode, reduced motion, pauses off screen
+- [x] A second model, the paper plane
 - [ ] More models: boat, frog, …
 - [ ] Static SVG export for no-JS / `<img>` use
 - [ ] Paper look: wing tops should show the coloured side
@@ -102,7 +112,7 @@ A model is written the way origami is taught: one fold at a time, against the pa
 3. **Compound folds are solved.** The square base and the petal folds move several creases at once. Those angles are left free, `pin` says which corners must stay together, and a small Gauss–Newton solver works out the angles along the whole motion so the paper never tears.
 4. **Layers are tracked.** After every step the engine works out which face ended up on top wherever two overlap, and gives every face a layer height, so flat stacks have real thickness.
 5. **Rendering.** Faces are projected with a perspective camera and shaded by how they face a light. Faces lying flat together are drawn as one panel and painted back-to-front with plane tests and a topological sort (`src/scene.ts`).
-6. **Paper.** A tiny CPU shader pass generates paper grain (fibres, tooth, cloudiness) once per page, and each panel maps it in sheet space, so the grain folds with the paper (`src/texture.ts`).
+6. **Paper.** Paper Shaders' paper-texture shader renders the grain once per page on a hidden WebGL canvas; the result is baked into an image that each panel maps in sheet space, so the grain folds with the paper (`src/paper-shader.ts`, with a small CPU fallback in `src/texture.ts`).
 7. **Looks are CSS** (`src/styles.ts`).
 
 The crane compiles in about 50 ms on first use. A frame costs about 1 ms of script. The whole package, crane included, is about 13 kB gzipped.
@@ -117,6 +127,28 @@ npm run build      # dist/ bundles + types, and a self-contained demo/dist/index
 npm run demo       # build, then print the demo page path
 npm run capture    # screenshots + video of the demo (needs Playwright and ffmpeg)
 ```
+
+## Releasing
+
+Publishing runs in GitHub Actions when a `v*` tag is pushed (`.github/workflows/publish.yml`). It typechecks, tests, builds, checks the tag against the version in `package.json`, then runs `npm publish --provenance`.
+
+One-time setup:
+
+1. On npmjs.com, create an access token. A granular token with read and write access to this package works, as does an automation token. For the first release the package does not exist yet, so the granular token needs to cover new packages or use an automation token.
+2. In the GitHub repo, go to Settings, Secrets and variables, Actions, and add the token as a repository secret named `NPM_TOKEN`.
+
+For each release:
+
+```sh
+npm version 0.1.1 --no-git-tag-version   # or edit package.json by hand
+git commit -am "Release v0.1.1"
+git tag v0.1.1
+git push && git push --tags
+```
+
+## Credits
+
+The paper texture comes from the paper-texture shader in [Paper Shaders](https://shaders.paper.design) (Apache-2.0), rendered once per page and baked into the grain that folds with the paper. It loads on demand as its own chunk; `texture="grain"` uses a smaller built-in grain instead, and `texture="none"` turns texture off. See `THIRD_PARTY_NOTICES.txt`.
 
 ## License
 
