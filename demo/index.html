@@ -2,210 +2,462 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f4f2ec">
+<meta name="description" content="origami-loaders: a web component that shows a paper crane folding itself, drawn as live SVG.">
 <title>origami-loaders</title>
 <style>
   :root {
-    --page: #ecebe6;
+    /* Surfaces */
+    --page: #f4f2ec;
+    --stage: #ebe8df;
+    --card: #fbfaf7;
+    --dark: #121214;
+
+    /* Text (all pass 4.5:1 on --page and --card) */
     --text: #1b1b1d;
-    --muted: #6d6c68;
-    --rule: #d9d7d0;
-    --light-tile: #f6f5f1;
-    --dark-tile: #0f0f11;
+    --muted: #5f5d57;
+    --faint: #7a776f;
+
+    /* Depth: stacked translucent shadows instead of borders */
+    --raised:
+      0 0 0 1px rgb(0 0 0 / .05),
+      0 1px 2px rgb(0 0 0 / .05),
+      0 6px 16px -6px rgb(0 0 0 / .07);
+    --inset: inset 0 0 0 1px rgb(0 0 0 / .05);
+    --ring-dark: 0 0 0 1px rgb(255 255 255 / .09);
+    --hairline: 1px;
+
+    /* Radii. Nested radius = outer radius - padding. */
+    --r-card: 20px;
+    --r-seg: 12px;            /* segmented control container, padding 4 */
+    --r-seg-item: 8px;        /* 12 - 4 */
+    --r-tile: 16px;
+
+    --ease-out: cubic-bezier(.23, 1, .32, 1);
+
+    --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
     --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --z-sticky: 100;
   }
+  @media (min-resolution: 2dppx) { :root { --hairline: .5px; } }
+
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
   body {
     margin: 0;
     background: var(--page);
     color: var(--text);
-    font: 15px/1.5 var(--font);
+    font: 16px/1.55 var(--font);
+    font-synthesis: none;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
-  main { max-width: 1040px; margin: 0 auto; padding: 56px 24px 96px; }
+  ::selection { background: rgb(0 0 0 / .12); }
+  [id] { scroll-margin-top: 24px; }
 
-  .eyebrow, .label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: var(--muted);
+  main { max-width: 1120px; margin: 0 auto; padding: 72px 32px 56px; }
+
+  h1, h2, h3, p, dl, dd, figure { margin: 0; }
+  h1, h2, h3 { text-wrap: balance; font-weight: 500; }
+  p { text-wrap: pretty; }
+  a { color: inherit; text-decoration-thickness: from-font; text-underline-offset: .2em; text-decoration-color: rgb(0 0 0 / .35); }
+  code, pre, kbd { font-family: var(--mono); font-feature-settings: normal; }
+  :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+  button, input, a { touch-action: manipulation; }
+  button { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    grid-template-areas: "intro stage" "install stage";
+    grid-template-rows: auto 1fr;
+    column-gap: 72px;
+    align-items: start;
   }
-  header { margin-bottom: 40px; }
+  .intro { grid-area: intro; padding-top: 24px; }
   h1 {
-    margin: 8px 0 4px;
-    font-size: clamp(28px, 5vw, 40px);
-    font-weight: 600;
-    letter-spacing: -.02em;
-    line-height: 1.1;
+    font-family: var(--serif);
+    font-size: clamp(40px, 5.2vw, 60px);
+    line-height: 1.02;
+    letter-spacing: -.025em;
+    font-weight: 500;
   }
-  .subtitle { margin: 0; color: var(--muted); font-size: 16px; }
-  h2 { margin: 72px 0 20px; }
-  h2.label { padding-top: 16px; border-top: 1px solid var(--rule); }
+  .lede { margin-top: 20px; max-width: 30em; font-size: 18px; line-height: 1.5; color: var(--muted); }
 
-  /* Controls */
-  .controls {
+  .install { grid-area: install; margin-top: 40px; align-self: start; min-width: 0; }
+  .snippet {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px 20px;
-    padding: 14px 16px;
-    margin-bottom: 20px;
-    background: var(--light-tile);
-    border: 1px solid var(--rule);
-    border-radius: 12px;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 6px 6px 18px;
+    background: var(--card);
+    border-radius: var(--r-card);
+    box-shadow: var(--raised);
   }
-  .group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .group.grow { flex: 1 1 260px; min-width: 220px; }
-  button {
-    font: inherit;
+  .snippet pre {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 12px 0;
+    overflow-x: auto;
     font-size: 13px;
+    line-height: 1.75;
+    white-space: pre;
+    -webkit-user-select: text; user-select: text;
+  }
+  .snippet .c { color: var(--faint); }
+  .snippet pre::-webkit-scrollbar { height: 8px; }
+  .snippet pre::-webkit-scrollbar-thumb { background: rgb(0 0 0 / .2); border-radius: 4px; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
     color: var(--text);
     background: transparent;
-    border: 1px solid var(--rule);
-    border-radius: 999px;
-    padding: 6px 14px;
-    min-height: 34px;
+    border: 0;
+    border-radius: var(--r-seg);
+    padding: 0 16px;
+    min-height: 40px;
     cursor: pointer;
-    transition: background .15s, border-color .15s, color .15s;
+    box-shadow: var(--raised);
+    background-color: var(--card);
+    transition-property: box-shadow, background-color, color, scale;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
   }
-  button:hover { border-color: #b9b7af; }
-  button[aria-pressed="true"], button.on { background: var(--text); color: var(--light-tile); border-color: var(--text); }
-  button:focus-visible, input:focus-visible { outline: 2px solid #3b6cff; outline-offset: 2px; }
-  input[type=range] { flex: 1; min-width: 120px; accent-color: var(--text); }
-  input[type=color] {
-    width: 32px; height: 32px; padding: 0;
-    border: 1px solid var(--rule); border-radius: 50%;
-    background: none; cursor: pointer;
-  }
-  input[type=color]::-webkit-color-swatch-wrapper { padding: 2px; }
-  input[type=color]::-webkit-color-swatch { border: 0; border-radius: 50%; }
-  input[type=color]::-moz-color-swatch { border: 0; border-radius: 50%; }
-  .readout {
-    font: 12px var(--mono);
-    color: var(--muted);
-    min-width: 0;
-    flex: 1 1 100%;
-  }
-  .readout b { color: var(--text); font-weight: 500; }
+  .btn:active { scale: .96; }
+  .btn[aria-pressed="true"].toggle { background-color: var(--text); color: var(--card); box-shadow: none; }
+  .btn svg { width: 14px; height: 14px; flex: none; fill: currentColor; }
+  .btn .play-icon { margin-left: 2px; }
+  .copy { align-self: flex-start; min-width: 76px; }
+  .snippet .copy { box-shadow: none; background-color: rgb(0 0 0 / .05); }
 
-  /* Tile grid */
-  #grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-  .tile {
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover { box-shadow: 0 0 0 1px rgb(0 0 0 / .08), 0 1px 3px rgb(0 0 0 / .08), 0 6px 16px -6px rgb(0 0 0 / .1); }
+    .snippet .copy:hover { background-color: rgb(0 0 0 / .09); box-shadow: none; }
+    .btn[aria-pressed="true"].toggle:hover { box-shadow: none; }
+    .seg button:not([aria-pressed="true"]):hover { color: var(--text); }
+    a:hover { text-decoration-color: currentColor; }
+  }
+  @media (pointer: coarse) { .btn { min-height: 44px; } }
+
+  /* ---------- Stage + controls ---------- */
+  .stage-col { grid-area: stage; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .stage {
+    --s: 360px;
+    position: relative;
+    margin: 0;
+    padding: 44px 24px 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    min-height: 260px;
-    padding: 20px 12px 16px;
-    border-radius: 14px;
-    border: 1px solid var(--rule);
+    background: var(--stage);
+    border-radius: var(--r-card);
+    box-shadow: var(--inset);
   }
-  .tile[data-theme=light] { background: var(--light-tile); color: #1b1b1d; --cap: #6d6c68; }
-  .tile[data-theme=dark] { background: var(--dark-tile); color: #ededf0; border-color: #1f1f23; --cap: #8c8c93; }
-  .tile figcaption { text-align: center; margin-top: auto; padding-top: 12px; }
-  .tile .name { display: block; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
-  .tile .desc { display: block; margin-top: 3px; font-size: 12px; line-height: 1.4; color: var(--cap); }
-  .tile { margin: 0; }
-
-  origami-loader { --s: 180px; width: var(--s); height: var(--s); display: block; }
-
-  /* Big preview */
-  .big { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; }
-  .stage {
-    --s: 360px;
-    display: grid; place-items: center;
-    padding: 32px 16px;
-    border-radius: 14px; border: 1px solid var(--rule);
-    background: var(--light-tile);
-    transition: background .2s;
+  .stage origami-loader { --ol-bg: var(--stage); }
+  .readout {
+    margin-top: 28px;
+    width: 100%;
+    min-height: 3.1em;           /* two lines reserved so the controls never move */
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    -webkit-user-select: none; user-select: none;
   }
-  .stage[data-theme=dark] { background: var(--dark-tile); border-color: #1f1f23; }
-  .stage origami-loader { --s: 360px; }
-  .switchers { display: flex; flex-direction: column; gap: 20px; min-width: 160px; }
-  .switchers .group { gap: 6px; }
-  .switchers .label { width: 100%; }
+  .readout .n { color: var(--text); font-weight: 500; white-space: nowrap; }
+  .readout .n b { font-weight: inherit; }
 
-  footer { margin-top: 72px; color: var(--muted); font-size: 12px; }
+  .controls {
+    background: var(--card);
+    border-radius: var(--r-card);
+    box-shadow: var(--raised);
+    padding: 12px;
+    display: grid;
+    gap: 4px;
+  }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .row.top { justify-content: space-between; }
+  .controls .btn { box-shadow: none; background-color: rgb(0 0 0 / .05); }
+  .controls .btn.toggle[aria-pressed="true"] { background-color: var(--text); }
+  @media (hover: hover) and (pointer: fine) {
+    .controls .btn:hover { box-shadow: none; background-color: rgb(0 0 0 / .09); }
+    .controls .btn.toggle[aria-pressed="true"]:hover { background-color: var(--text); }
+  }
+  #play { min-width: 96px; }
+  .seg {
+    display: inline-flex;
+    padding: 4px;
+    gap: 2px;
+    border-radius: var(--r-seg);
+    background: rgb(0 0 0 / .05);
+  }
+  .seg button {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    min-width: 48px;
+    min-height: 36px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--r-seg-item);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition-property: color, background-color, box-shadow, scale;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
+  .seg button:active { scale: .96; }
+  .seg button[aria-pressed="true"] { background: var(--card); color: var(--text); box-shadow: var(--raised); }
+  @media (pointer: coarse) { .seg button { min-height: 44px; min-width: 52px; } .seg { padding: 4px; } }
 
-  @media (max-width: 860px) {
-    #grid { grid-template-columns: repeat(2, 1fr); }
-    .big { grid-template-columns: 1fr; }
-    .switchers { flex-direction: row; flex-wrap: wrap; gap: 16px 24px; }
+  /* Scrubber */
+  .scrub-wrap { padding: 4px 6px 0; }
+  .scrub-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--muted); }
+  .scrub-head output { font-variant-numeric: tabular-nums; color: var(--text); min-width: 4ch; text-align: right; }
+  input[type=range] {
+    --p: 0%;
+    display: block;
+    width: 100%;
+    height: 44px;
+    margin: 0;
+    background: transparent;
+    -webkit-appearance: none; appearance: none;
+    cursor: pointer;
+    touch-action: pan-y;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, var(--text) var(--p), rgb(0 0 0 / .12) var(--p));
+  }
+  input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: rgb(0 0 0 / .12); }
+  input[type=range]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--text); }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; margin-top: -9px;
+    border-radius: 50%; border: 0;
+    background: var(--card);
+    box-shadow: 0 0 0 1px rgb(0 0 0 / .14), 0 2px 5px rgb(0 0 0 / .16);
+    transition: scale 150ms ease-out;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%; border: 0;
+    background: var(--card);
+    box-shadow: 0 0 0 1px rgb(0 0 0 / .14), 0 2px 5px rgb(0 0 0 / .16);
+  }
+  input[type=range]:active::-webkit-slider-thumb { scale: 1.08; }
+  .hint { padding: 0 6px 6px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+  /* ---------- Sections ---------- */
+  section.block { margin-top: 112px; }
+  .block > header { max-width: 36em; margin-bottom: 32px; }
+  h2 { font-family: var(--serif); font-size: 32px; line-height: 1.1; letter-spacing: -.02em; }
+  .block > header p { margin-top: 10px; color: var(--muted); }
+
+  /* Looks */
+  #grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .tile {
+    --s: 148px;
+    margin: 0;
+    padding: 24px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: var(--r-tile);
+    min-height: 276px;
+  }
+  .tile origami-loader { --ol-bg: var(--tile-bg); }
+  .tile[data-theme=light] { --tile-bg: var(--card); background: var(--card); box-shadow: var(--raised); --cap: var(--muted); }
+  .tile[data-theme=dark]  { --tile-bg: var(--dark); background: var(--dark); box-shadow: var(--ring-dark); color: #ededf0; --cap: #a1a1a9; }
+  .tile figcaption { margin-top: auto; padding-top: 16px; text-align: center; width: 100%; }
+  .tile .name { display: block; font-size: 14px; font-weight: 500; line-height: 1.3; }
+  .tile .desc { display: block; margin-top: 4px; font-size: 13px; line-height: 1.4; color: var(--cap); text-wrap: balance; }
+  .tile .name i { font-style: normal; color: var(--cap); font-weight: 400; }
+
+  origami-loader { display: block; width: var(--s); height: var(--s); }
+
+  /* Usage */
+  .usage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: start; }
+  .usage h3 { font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 12px; }
+  .usage .snippet { padding: 6px 18px; }
+  .usage .snippet pre { padding: 14px 0; }
+  dl.api { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 24px; font-size: 14px; }
+  dl.api dt, dl.api dd { padding: 10px 0; border-top: var(--hairline) solid rgb(0 0 0 / .12); }
+  dl.api dt:first-of-type, dl.api dt:first-of-type + dd { border-top: 0; padding-top: 0; }
+  dl.api dt { font-family: var(--mono); font-size: 13px; line-height: 1.7; }
+  dl.api dd { color: var(--muted); line-height: 1.55; }
+  dl.api dd code { font-size: 12.5px; color: var(--text); }
+  .usage .api-group + .api-group { margin-top: 32px; }
+  .note { margin-top: 40px; max-width: 44em; color: var(--muted); font-size: 15px; }
+
+  footer { margin-top: 96px; padding-top: 20px; border-top: var(--hairline) solid rgb(0 0 0 / .12); font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: space-between; }
+  footer a { display: inline-block; padding: 8px 0; margin: -8px 0; }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 960px) {
+    main { padding-top: 48px; }
+    .hero { grid-template-columns: minmax(0, 1fr); grid-template-areas: "intro" "stage" "install"; column-gap: 0; }
+    .intro { padding-top: 0; }
+    .stage-col { margin-top: 32px; }
+    .install { margin-top: 32px; }
+    #grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .usage { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   }
   @media (max-width: 560px) {
-    main { padding: 32px 14px 64px; }
+    main { padding: 32px 16px 40px; }
+    h1 { font-size: 42px; }
+    .lede { font-size: 17px; }
+    .stage { --s: 300px; padding: 32px 12px 16px; }
+    .readout { margin-top: 20px; }
+    .controls { padding: 8px; }
+    .tile { --s: min(132px, 32vw); padding: 20px 10px 14px; min-height: 252px; }
     #grid { gap: 8px; }
-    .tile { padding: 14px 8px 12px; min-height: 220px; }
-    origami-loader { --s: min(150px, 34vw); }
-    .stage { padding: 20px 8px; }
-    .stage origami-loader { --s: min(360px, calc(100vw - 56px)); }
-    h2 { margin-top: 48px; }
+    section.block { margin-top: 80px; }
+    h2 { font-size: 28px; }
+    .snippet pre { font-size: 12.5px; }
+    /* Keep the three row-1 controls on one line at 390px */
+    .row.top .btn { padding: 0 12px; }
+    #play { min-width: 88px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .btn, .seg button, input[type=range]::-webkit-slider-thumb { transition: none; }
+    .btn:active, .seg button:active { scale: 1; }
   }
 </style>
 </head>
 <body>
 <main>
-  <header>
-    <div class="eyebrow">Open-source web component</div>
-    <h1>origami-loaders</h1>
-    <p class="subtitle">Crane · steps 1–3 (quick test)</p>
-  </header>
-
-  <section aria-label="Controls">
-    <div class="controls" role="group" aria-label="Global controls">
-      <div class="group">
-        <button id="play" type="button" aria-pressed="false">Pause</button>
-      </div>
-      <div class="group grow">
-        <span class="label">Scrub</span>
-        <input id="scrub" type="range" min="0" max="1" step="0.001" value="0" aria-label="Fold progress">
-        <button id="live" type="button" class="on" aria-pressed="true">Live</button>
-      </div>
-      <div class="group" role="group" aria-label="Speed">
-        <span class="label">Speed</span>
-        <button type="button" data-speed="0.5" aria-pressed="false">0.5×</button>
-        <button type="button" data-speed="1" aria-pressed="true">1×</button>
-        <button type="button" data-speed="2" aria-pressed="false">2×</button>
-      </div>
-      <div class="group">
-        <label class="label" for="ink">Ink</label>
-        <input id="ink" type="color" value="#1b1b1d">
-        <label class="label" for="paper">Paper</label>
-        <input id="paper" type="color" value="#e8573d">
-      </div>
-      <div class="readout">Step <b id="step">—</b></div>
+  <div class="hero">
+    <div class="intro">
+      <h1>origami-loaders</h1>
+      <p class="lede">A web component that shows a paper crane folding itself, drawn as live SVG. Use it as a loading spinner, or feed it a progress value and it folds to match.</p>
     </div>
-  </section>
 
-  <section aria-label="Looks and themes">
+    <div class="stage-col">
+      <figure class="stage" id="stage">
+        <origami-loader id="hero" look="ink" theme="light" aria-label="Paper crane folding"></origami-loader>
+        <figcaption class="readout" id="readout" aria-live="off"><span class="n">Step <b id="step-n">1</b> of 14</span> · <span id="step-label">Starting</span></figcaption>
+      </figure>
+
+      <div class="controls" role="group" aria-label="Crane controls">
+        <div class="row top">
+          <div class="row">
+            <button id="play" class="btn" type="button">
+              <svg id="play-icon" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5h2.6v11H3zM8.4 1.5H11v11H8.4z"/></svg>
+              <span id="play-label">Pause</span>
+            </button>
+            <button id="live" class="btn toggle" type="button" aria-pressed="true">Live</button>
+          </div>
+          <div class="seg" role="group" aria-label="Speed">
+            <button type="button" data-speed="0.5" aria-pressed="false">0.5×</button>
+            <button type="button" data-speed="1" aria-pressed="true">1×</button>
+            <button type="button" data-speed="2" aria-pressed="false">2×</button>
+          </div>
+        </div>
+        <div class="scrub-wrap">
+          <div class="scrub-head"><label for="scrub">Progress</label><output id="pct" for="scrub">Live</output></div>
+          <input id="scrub" type="range" min="0" max="1" step="0.001" value="0">
+        </div>
+        <p class="hint">This is progress mode. Set a value from 0 to 1 and the crane folds to that point and holds. Live goes back to timed playback.</p>
+      </div>
+    </div>
+
+    <div class="install">
+      <div class="snippet">
+        <pre id="snippet-text"><code>npm i origami-loaders
+
+import 'origami-loaders'
+&lt;origami-loader&gt;&lt;/origami-loader&gt;</code></pre>
+        <button id="copy" class="btn copy" type="button" aria-label="Copy install snippet"><span id="copy-label">Copy</span></button>
+      </div>
+      <span class="sr" id="copy-status" role="status"></span>
+    </div>
+  </div>
+
+  <section class="block" id="looks" aria-labelledby="looks-h">
+    <header>
+      <h2 id="looks-h">Looks</h2>
+      <p>Four looks, each in light and dark. Ink · Light is the default and the one this page is built around.</p>
+    </header>
     <div id="grid"></div>
   </section>
 
-  <h2 class="label">Big preview</h2>
-  <section class="big" aria-label="Big preview">
-    <div class="stage" id="stage" data-theme="light">
-      <origami-loader id="big" look="ink" theme="light" style="--ol-bg:#f6f5f1" aria-label="Large preview"></origami-loader>
-    </div>
-    <div class="switchers">
-      <div class="group" id="looks" role="group" aria-label="Look">
-        <span class="label">Look</span>
-        <button type="button" data-look="ink" aria-pressed="true">ink</button>
-        <button type="button" data-look="blueprint" aria-pressed="false">blueprint</button>
-        <button type="button" data-look="graphite" aria-pressed="false">graphite</button>
-        <button type="button" data-look="paper" aria-pressed="false">paper</button>
+  <section class="block" id="usage" aria-labelledby="usage-h">
+    <header>
+      <h2 id="usage-h">Usage</h2>
+      <p>Import the package once. It registers the element, and you size it with CSS.</p>
+    </header>
+    <div class="usage">
+      <div>
+        <h3>HTML</h3>
+        <div class="snippet"><pre><code>&lt;origami-loader
+  look="ink"
+  theme="light"
+  speed="1"
+  style="width: 96px; height: 96px"&gt;
+&lt;/origami-loader&gt;
+
+&lt;!-- progress mode --&gt;
+&lt;origami-loader
+  progress="0.4"&gt;
+&lt;/origami-loader&gt;</code></pre></div>
       </div>
-      <div class="group" id="themes" role="group" aria-label="Theme">
-        <span class="label">Theme</span>
-        <button type="button" data-theme="light" aria-pressed="true">light</button>
-        <button type="button" data-theme="dark" aria-pressed="false">dark</button>
+      <div>
+        <div class="api-group">
+          <h3>Attributes</h3>
+          <dl class="api">
+            <dt>look</dt><dd><code>ink</code> (default), <code>blueprint</code>, <code>graphite</code>, <code>paper</code></dd>
+            <dt>theme</dt><dd><code>light</code>, <code>dark</code>, <code>auto</code> follows the system</dd>
+            <dt>speed</dt><dd>Playback multiplier. Default <code>1</code>.</dd>
+            <dt>progress</dt><dd><code>0</code> to <code>1</code>. When set, the crane stops playing and shows that point of the fold.</dd>
+            <dt>paused</dt><dd>Boolean. Holds the current frame.</dd>
+            <dt>texture</dt><dd><code>none</code> turns off the paper grain.</dd>
+          </dl>
+        </div>
+        <div class="api-group">
+          <h3>CSS variables</h3>
+          <dl class="api">
+            <dt>--ol-ink</dt><dd>Line colour.</dd>
+            <dt>--ol-bg</dt><dd>Set this to the surface behind the loader. It hides the lines on faces that sit behind others.</dd>
+            <dt>--ol-paper</dt><dd>Sheet colour in the ink and graphite looks.</dd>
+            <dt>--ol-front, --ol-back</dt><dd>The two sides of the sheet in the paper look.</dd>
+            <dt>--ol-stroke</dt><dd>Line width, for example <code>1.5px</code>.</dd>
+          </dl>
+        </div>
       </div>
     </div>
+    <p class="note">Size comes from CSS <code>width</code> and <code>height</code>. The loader pauses while it is off screen and holds still when the user prefers reduced motion. It is a <code>role="progressbar"</code>, so set <code>aria-label</code> to say what is loading.</p>
   </section>
 
-  <footer>MIT · rishiashar/origami-loaders</footer>
+  <footer>
+    <span>MIT</span>
+    <a href="https://github.com/rishiashar/origami-loaders">github.com/rishiashar/origami-loaders</a>
+  </footer>
 </main>
 
 <!-- Dev only: removed by scripts/build.mjs, which inlines the bundle at OL_SCRIPT instead. -->
@@ -214,112 +466,105 @@
 
 <script>
 (function () {
-  var LOOKS = [
-    ['ink', 'Line art, hidden lines removed'],
-    ['blueprint', 'See-through wireframe with diagram-style fold lines'],
-    ['graphite', 'Monochrome with soft light shading'],
-    ['paper', 'Two-tone origami paper']
-  ];
-  var BG = { light: '#f6f5f1', dark: '#0f0f11' };
   var $ = function (id) { return document.getElementById(id); };
 
-  // Build the 4 x 2 tile grid: light themes in the first row, dark in the second.
+  // Looks grid: look-major order so a look's light and dark tiles sit side by side.
+  var LOOKS = [
+    ['ink', 'Ink', 'Black line art on white paper.', 'White line art on black paper.'],
+    ['blueprint', 'Blueprint', 'See-through wireframe with fold lines.', 'The same wireframe, light on dark.'],
+    ['graphite', 'Graphite', 'Grey shading, lit from one side.', 'Soft shading on a dark ground.'],
+    ['paper', 'Paper', 'Two-tone paper, front and back.', 'The same two tones on dark.']
+  ];
   var grid = $('grid');
-  ['light', 'dark'].forEach(function (theme) {
-    LOOKS.forEach(function (l) {
+  LOOKS.forEach(function (l) {
+    ['light', 'dark'].forEach(function (theme, i) {
       var fig = document.createElement('figure');
       fig.className = 'tile';
       fig.dataset.theme = theme;
+      var isDefault = l[0] === 'ink' && theme === 'light';
       fig.innerHTML =
-        '<origami-loader look="' + l[0] + '" theme="' + theme + '" style="--ol-bg:' + BG[theme] + '"></origami-loader>' +
-        '<figcaption><span class="name">' + l[0] + ' · ' + theme + '</span><span class="desc">' + l[1] + '</span></figcaption>';
+        '<origami-loader look="' + l[0] + '" theme="' + theme + '" aria-label="' + l[1] + ', ' + theme + '"></origami-loader>' +
+        '<figcaption><span class="name">' + l[1] + ' <i>· ' + (theme === 'light' ? 'Light' : 'Dark') + (isDefault ? ' · Default' : '') + '</i></span>' +
+        '<span class="desc">' + l[2 + i] + '</span></figcaption>';
       grid.appendChild(fig);
     });
   });
 
-  var tiles = Array.prototype.slice.call(grid.querySelectorAll('origami-loader'));
-  var big = $('big');
-  var all = function () { return tiles.concat([big]); };
-
-  var state = { paused: false, speed: 1, ink: null, paper: null };
+  var hero = $('hero');
 
   // Play / pause
-  var play = $('play');
+  var play = $('play'), paused = false;
+  var PAUSE_ICON = 'M3 1.5h2.6v11H3zM8.4 1.5H11v11H8.4z', PLAY_ICON = 'M3.5 1.2 12.5 7l-9 5.8z';
   play.addEventListener('click', function () {
-    state.paused = !state.paused;
-    all().forEach(function (el) { el.toggleAttribute('paused', state.paused); });
-    play.textContent = state.paused ? 'Play' : 'Pause';
-    play.setAttribute('aria-pressed', String(state.paused));
+    paused = !paused;
+    hero.toggleAttribute('paused', paused);
+    $('play-label').textContent = paused ? 'Play' : 'Pause';
+    var icon = $('play-icon');
+    icon.firstElementChild.setAttribute('d', paused ? PLAY_ICON : PAUSE_ICON);
+    icon.classList.toggle('play-icon', paused);
   });
 
-  // Scrubber: dragging pins progress; "Live" resumes playback.
-  var scrub = $('scrub'), live = $('live');
+  // Scrubber: moving it pins progress; Live resumes timed playback.
+  var scrub = $('scrub'), live = $('live'), pct = $('pct');
+  function paintScrub() { scrub.style.setProperty('--p', (scrub.value * 100) + '%'); }
   function setLive(on) {
-    live.classList.toggle('on', on);
     live.setAttribute('aria-pressed', String(on));
+    pct.textContent = on ? 'Live' : Math.round(scrub.value * 100) + '%';
   }
   scrub.addEventListener('input', function () {
-    all().forEach(function (el) { el.setAttribute('progress', scrub.value); });
+    hero.setAttribute('progress', scrub.value);
+    paintScrub();
     setLive(false);
+    readStep();
   });
   live.addEventListener('click', function () {
-    all().forEach(function (el) { el.removeAttribute('progress'); });
+    hero.removeAttribute('progress');
     setLive(true);
   });
+  paintScrub();
 
   // Speed
   var speedBtns = Array.prototype.slice.call(document.querySelectorAll('[data-speed]'));
   speedBtns.forEach(function (b) {
     b.addEventListener('click', function () {
-      state.speed = b.dataset.speed;
-      all().forEach(function (el) { el.setAttribute('speed', state.speed); });
+      hero.setAttribute('speed', b.dataset.speed);
       speedBtns.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
     });
   });
 
-  // Colors: Ink only on light-theme loaders, Paper on every paper-look loader.
-  function syncColors() {
-    all().forEach(function (el) {
-      if (state.ink && el.getAttribute('theme') === 'light') el.style.setProperty('--ol-ink', state.ink);
-      else el.style.removeProperty('--ol-ink');
-      if (state.paper && el.getAttribute('look') === 'paper') el.style.setProperty('--ol-front', state.paper);
-      else el.style.removeProperty('--ol-front');
-    });
+  // Step readout
+  function showStep(s) {
+    if (!s || s.diagram == null) return;
+    $('step-n').textContent = s.diagram;
+    $('step-label').textContent = s.label;
   }
-  $('ink').addEventListener('input', function (e) { state.ink = e.target.value; syncColors(); });
-  $('paper').addEventListener('input', function (e) { state.paper = e.target.value; syncColors(); });
-
-  // Big preview switchers
-  function pick(containerId, attr, apply) {
-    var btns = Array.prototype.slice.call($(containerId).querySelectorAll('button'));
-    btns.forEach(function (b) {
-      b.addEventListener('click', function () {
-        apply(b.dataset[attr]);
-        btns.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
-        syncColors();
-      });
-    });
-  }
-  pick('looks', 'look', function (v) { big.setAttribute('look', v); });
-  pick('themes', 'theme', function (v) {
-    big.setAttribute('theme', v);
-    big.style.setProperty('--ol-bg', BG[v]);
-    $('stage').dataset.theme = v;
-  });
-
-  // Step readout, from the first tile.
-  tiles[0].addEventListener('ol-step', function (e) {
-    var d = e.detail || {};
-    $('step').textContent = d.diagram + ' of 14 · ' + d.label;
-  });
-  function initialStep() {
-    var s = tiles[0].currentStep;
-    if (s) $('step').textContent = s.diagram + ' of 14 · ' + s.label;
-  }
-
+  function readStep() { requestAnimationFrame(function () { showStep(hero.currentStep); }); }
+  hero.addEventListener('ol-step', function (e) { showStep(e.detail); });
   if (window.customElements && customElements.whenDefined) {
-    customElements.whenDefined('origami-loader').then(initialStep);
+    customElements.whenDefined('origami-loader').then(function () { showStep(hero.currentStep); });
   }
+
+  // Copy
+  var copy = $('copy'), copyLabel = $('copy-label'), status = $('copy-status'), timer;
+  var TEXT = "npm i origami-loaders\n\nimport 'origami-loaders'\n<origami-loader></origami-loader>";
+  function flash(label, msg) {
+    copyLabel.textContent = label;
+    status.textContent = msg;
+    clearTimeout(timer);
+    timer = setTimeout(function () { copyLabel.textContent = 'Copy'; status.textContent = ''; }, 1800);
+  }
+  copy.addEventListener('click', function () {
+    var done = function () { flash('Copied', 'Copied to clipboard'); };
+    var fail = function () {
+      var r = document.createRange();
+      r.selectNodeContents($('snippet-text'));
+      var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      flash('Select', 'Copy failed. The snippet is selected, press copy on your keyboard.');
+    };
+    try {
+      navigator.clipboard.writeText(TEXT).then(done, fail);
+    } catch (e) { fail(); }
+  });
 })();
 </script>
 </body>

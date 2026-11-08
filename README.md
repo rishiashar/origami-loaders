@@ -83,29 +83,29 @@ el.addEventListener('ol-step', (e) => {
 
 ## Status
 
-Early days. The paper crane follows the classic 14-step diagram; **steps 1–3** (pre-creasing the sheet: both diagonals, turn over, both book folds) are done.
+The paper crane folds through all 14 steps of the classic diagram, about 25 seconds per loop: pre-creases, square base, petal folds on both sides, narrowing, inside reverse folds for the neck, tail and head, then the wings spread and it flies off while a new sheet drops in.
 
-- [x] Folding engine: crease patterns, forward kinematics, timeline, 3D projection, depth sorting
-- [x] Four looks, light + dark, recolourable
-- [x] Crane steps 1–3
-- [ ] Crane step 4: collapse into the square base (first compound fold: many creases move at once)
-- [ ] Crane steps 5–14: kite folds, petal folds, narrowing, reverse folds for neck, tail and head
-- [ ] Loop ending: the crane flaps and flies off, a new sheet drops in
+- [x] Folding engine: folds against the paper as it lies, solved compound folds, layer stacking, 3D projection, depth sorting
+- [x] The crane, all 14 steps
+- [x] Four looks, light and dark, recolourable, with procedural paper grain
+- [x] Progress mode, reduced motion, pauses off screen
 - [ ] More models: boat, frog, …
 - [ ] Static SVG export for no-JS / `<img>` use
+- [ ] Paper look: wing tops should show the coloured side
 
 ## How it works
 
-Every model is **real paper geometry**, not drawings.
+A model is written the way origami is taught: one fold at a time, against the paper as it currently lies (`src/models/crane.ts`).
 
-1. **Crease pattern.** The square sheet is cut into convex faces along every line it will ever be folded on (`src/pattern.ts`).
-2. **Fold sequence.** Each step says which creases move, to what angle (valley = toward you, mountain = away) and with what easing, plus how the whole sheet is turned (`src/timeline.ts`, `src/models/crane.ts`).
-3. **Kinematics.** Fold angles become a rigid 3D transform per face by walking outward from one face that stays still and rotating across each bent crease (`src/kinematics.ts`).
-4. **Projection.** Faces are projected with a perspective camera and shaded by how they face a light (`src/scene.ts`).
-5. **Depth.** SVG has no depth buffer, so faces that stay flat together are grouped into panels and painted back-to-front with plane tests and a topological sort. Paper never closes perfectly flat (a 1.5° springback), which keeps stacked layers in a well-defined order.
-6. **Looks are CSS.** The renderer only outputs geometry, which side of the paper is showing and a light value; each look is a few lines of CSS over that (`src/styles.ts`).
+1. **Folds cut the paper.** Each fold splits the faces it passes through along the fold line, so the crease pattern builds itself (`src/fold.ts`).
+2. **Joints move the faces.** A hinge rotates faces about a fold line; a swing turns them in the plane (for reverse folds); joints chain, so a flap can fold while it is being lifted.
+3. **Compound folds are solved.** The square base and the petal folds move several creases at once. Those angles are left free, `pin` says which corners must stay together, and a small Gauss–Newton solver works out the angles along the whole motion so the paper never tears.
+4. **Layers are tracked.** After every step the engine works out which face ended up on top wherever two overlap, and gives every face a layer height, so flat stacks have real thickness.
+5. **Rendering.** Faces are projected with a perspective camera and shaded by how they face a light. Faces lying flat together are drawn as one panel and painted back-to-front with plane tests and a topological sort (`src/scene.ts`).
+6. **Paper.** A tiny CPU shader pass generates paper grain (fibres, tooth, cloudiness) once per page, and each panel maps it in sheet space, so the grain folds with the paper (`src/texture.ts`).
+7. **Looks are CSS** (`src/styles.ts`).
 
-The result is a live `<svg>` updated every frame: crisp at any size, themeable with CSS variables, about 7 kB gzipped for the engine, the component and the crane. It pauses itself off screen, and under `prefers-reduced-motion` it steps between key poses instead of animating.
+The crane compiles in about 50 ms on first use. A frame costs about 1 ms of script. The whole package, crane included, is about 13 kB gzipped.
 
 ## Development
 

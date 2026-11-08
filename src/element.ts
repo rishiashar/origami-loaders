@@ -1,25 +1,25 @@
 import { clamp } from './math';
-import { getModel, type CompiledModel } from './models/index';
+import { getModel } from './models/index';
+import type { Frame, Player } from './player';
 import { SvgScene } from './scene';
 import { STYLE } from './styles';
-import type { Frame } from './timeline';
+import { paperTexture, textureSize } from './texture';
 
 export type Look = 'ink' | 'blueprint' | 'graphite' | 'paper';
 const LOOKS: Look[] = ['ink', 'blueprint', 'graphite', 'paper'];
 
 export interface StepInfo { index: number; diagram: number; label: string }
 
-const reducedMotion = () =>
-  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const motion = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
 
 /**
- * <origami-loader model="crane" look="ink" theme="auto" speed="1" progress="0.4" paused>
+ * <origami-loader model="crane" look="ink" theme="auto" speed="1" progress="0.4" paused texture="none">
  */
 export class OrigamiLoader extends HTMLElement {
-  static get observedAttributes() { return ['model', 'look', 'speed', 'progress', 'paused']; }
+  static get observedAttributes() { return ['model', 'look', 'speed', 'progress', 'paused', 'texture']; }
 
   private svg: SVGSVGElement;
-  private model?: CompiledModel;
+  private player?: Player;
   private scene?: SvgScene;
   private frame?: Frame;
   private time = 0;
@@ -28,11 +28,12 @@ export class OrigamiLoader extends HTMLElement {
   private visible = true;
   private io?: IntersectionObserver;
   private step = -1;
+  private onMotion = () => this.sync();
 
   constructor() {
     super();
     const root = this.attachShadow({ mode: 'open' });
-    root.innerHTML = `<style>${STYLE}</style><svg part="svg" viewBox="-1.5 -1.5 3 3" aria-hidden="true"><g></g></svg>`;
+    root.innerHTML = `<style>${STYLE}</style><svg part="svg" viewBox="-1.6 -1.6 3.2 3.2" aria-hidden="true"><g></g></svg>`;
     this.svg = root.querySelector('svg')!;
   }
 
@@ -48,11 +49,13 @@ export class OrigamiLoader extends HTMLElement {
       });
       this.io.observe(this);
     }
+    motion?.addEventListener?.('change', this.onMotion);
     this.sync();
   }
 
   disconnectedCallback() {
     this.io?.disconnect();
+    motion?.removeEventListener?.('change', this.onMotion);
     this.stop();
   }
 
@@ -60,18 +63,19 @@ export class OrigamiLoader extends HTMLElement {
     if (!this.isConnected) return;
     if (name === 'model') this.load();
     if (name === 'look') this.applyLook();
+    if (name === 'texture') this.loadTexture();
     this.sync();
   }
 
   /** Length of one loop, in seconds. */
-  get duration(): number { return this.model?.timeline.duration ?? 0; }
+  get duration(): number { return this.player?.duration ?? 0; }
 
   /** The step currently shown. */
   get currentStep(): StepInfo | undefined {
-    const tl = this.model?.timeline;
-    if (!tl) return undefined;
-    const index = tl.stepAt(this.displayTime());
-    const s = tl.steps[index];
+    const p = this.player;
+    if (!p) return undefined;
+    const index = p.stepAt(this.displayTime());
+    const s = p.model.steps[index];
     return { index, diagram: s.diagram, label: s.label };
   }
 
@@ -84,17 +88,31 @@ export class OrigamiLoader extends HTMLElement {
 
   private load() {
     const name = this.getAttribute('model') || 'crane';
-    this.model = getModel(name);
-    if (!this.model) {
+    this.player = getModel(name);
+    if (!this.player) {
       console.warn(`<origami-loader>: unknown model "${name}"`);
       return;
     }
-    this.scene = new SvgScene(this.svg.firstElementChild as SVGGElement, this.model.pattern);
+    this.scene = new SvgScene(this.svg.firstElementChild as SVGGElement, this.player.model);
     this.frame = undefined;
     this.step = -1;
     // Start on the flat sheet, so a paused or off-screen loader is never blank.
-    this.time = this.model.timeline.content[0];
+    this.time = this.player.model.content[0];
+    this.loadTexture();
     this.draw();
+  }
+
+  private loadTexture() {
+    const scene = this.scene;
+    const off = this.getAttribute('texture') === 'none';
+    this.svg.dataset.tex = off ? 'off' : 'loading';
+    if (!scene || off) return;
+    const px = (this.getBoundingClientRect().width || 160) * (globalThis.devicePixelRatio || 1) * (2 / 3.2);
+    paperTexture(textureSize(px)).then((href) => {
+      if (scene !== this.scene || !href) return;
+      scene.setTexture(href);
+      if (this.svg.dataset.tex !== 'off') this.svg.dataset.tex = 'on';
+    });
   }
 
   private applyLook() {
@@ -115,21 +133,19 @@ export class OrigamiLoader extends HTMLElement {
   }
 
   private displayTime(): number {
-    const tl = this.model?.timeline;
-    if (!tl) return 0;
+    const pl = this.player;
+    if (!pl) return 0;
+    const [a, b] = pl.model.content;
     const p = this.progress;
-    if (p !== undefined) return tl.content[0] + p * (tl.content[1] - tl.content[0]);
-    if (reducedMotion()) {
-      // Hold the end of each step instead of animating between them.
-      const k = tl.stepAt(this.time);
-      return tl.starts[k] + tl.steps[k].duration * 0.999;
-    }
+    if (p !== undefined) return a + p * (b - a);
+    // Reduced motion: no movement at all — show the finished model.
+    if (motion?.matches) return b - 1e-3;
     return this.time;
   }
 
   private draw() {
-    const m = this.model;
-    if (!m || !this.scene) return;
+    const pl = this.player;
+    if (!pl || !this.scene) return;
     const p = this.progress;
     if (p !== undefined) {
       this.setAttribute('aria-valuenow', String(Math.round(p * 100)));
@@ -138,8 +154,8 @@ export class OrigamiLoader extends HTMLElement {
     } else {
       this.removeAttribute('aria-valuenow');
     }
-    this.frame = m.timeline.evaluate(this.displayTime(), this.frame);
-    this.scene.render(this.frame, m.kinematics.solve(this.frame.edgeAngles, m.maxFold));
+    this.frame = pl.evaluate(this.displayTime(), this.frame);
+    this.scene.render(this.frame);
     if (this.frame.step !== this.step) {
       this.step = this.frame.step;
       this.dispatchEvent(new CustomEvent('ol-step', { detail: this.currentStep }));
@@ -147,7 +163,8 @@ export class OrigamiLoader extends HTMLElement {
   }
 
   private sync() {
-    const run = this.isConnected && this.visible && !this.hasAttribute('paused') && this.progress === undefined;
+    const run = this.isConnected && this.visible && !this.hasAttribute('paused')
+      && this.progress === undefined && !motion?.matches;
     if (run && !this.raf) {
       this.last = 0;
       this.raf = requestAnimationFrame(this.tick);

@@ -1,34 +1,21 @@
 import { DEG, apply, dot, mul, normalize, rotX, rotY, rotZ, scale, sub, translate, type Mat, type Vec3 } from './math';
-import type { Pattern } from './pattern';
-import { EDGE_ACTIVE, EDGE_FOLDED, EDGE_MEMORY, type Frame, type Pose } from './timeline';
+import { hull, type P2 } from './geom';
+import type { Folded } from './fold';
+import type { Frame } from './player';
+import type { Pose } from './motion';
 
 /**
- * 3D → 2D. The camera sits on +z at distance `camera`, looking at the origin.
- * SVG has no depth buffer, so faces are ordered back-to-front with plane tests
- * (Newell-style) for every pair that overlaps on screen, then topologically sorted.
+ * 3D → SVG. The camera sits on +z, looking at the origin. Faces that lie flat
+ * against each other along an unbent crease are drawn together as one panel
+ * (one fill, one set of lines, one texture mapping). SVG has no depth buffer,
+ * so panels are painted back-to-front: plane tests for every pair that
+ * overlaps on screen, then a topological sort.
  */
-
-export interface View {
-  /** Model-space corners. */
-  pts: Vec3[];
-  /** Projected corners in viewBox units (y down). */
-  scr: [number, number][];
-  /** Normal of the front side. */
-  normal: Vec3;
-  center: Vec3;
-  /** Distance of the centroid from the camera. */
-  depth: number;
-  /** True when we are looking at the front (coloured) side. */
-  front: boolean;
-  /** Lambert term for the visible side, 0–1. */
-  light: number;
-  box: [number, number, number, number];
-}
 
 export interface Camera {
   /** Distance from the model origin; smaller = stronger perspective. */
   distance: number;
-  /** Direction *toward* the light. */
+  /** Direction toward the light. */
   light: Vec3;
 }
 
@@ -38,44 +25,20 @@ export function poseMatrix(p: Pose): Mat {
   return mul(translate(p.tx, p.ty, p.tz), mul(scale(p.s), mul(rotX(p.rx * DEG), mul(rotY(p.ry * DEG), rotZ(p.rz * DEG)))));
 }
 
-export function project(p: Pattern, transforms: Mat[], pose: Pose, cam: Camera = defaultCamera): View[] {
-  const M = poseMatrix(pose);
-  const D = cam.distance;
-  const eye: Vec3 = [0, 0, D];
-  return p.faces.map((face, f) => {
-    const T = mul(M, transforms[f]);
-    const pts = face.map((v) => apply(T, p.coords[v][0], p.coords[v][1], 0));
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    const scr = pts.map(([x, y, z]) => {
-      const k = D / (D - z);
-      const sx = x * k, sy = -y * k;
-      if (sx < minX) minX = sx; if (sx > maxX) maxX = sx;
-      if (sy < minY) minY = sy; if (sy > maxY) maxY = sy;
-      return [sx, sy] as [number, number];
-    });
-    const center: Vec3 = [0, 0, 0];
-    for (const q of pts) { center[0] += q[0]; center[1] += q[1]; center[2] += q[2]; }
-    center[0] /= pts.length; center[1] /= pts.length; center[2] /= pts.length;
-    const normal = normalize([T[2], T[6], T[10]]);
-    const toEye = sub(eye, center);
-    const front = dot(normal, toEye) > 0;
-    const vis: Vec3 = front ? normal : [-normal[0], -normal[1], -normal[2]];
-    const light = Math.max(0, dot(vis, cam.light));
-    return {
-      pts, scr, normal, center, front, light,
-      depth: Math.hypot(toEye[0], toEye[1], toEye[2]),
-      box: [minX, minY, maxX, maxY],
-    };
-  });
+interface Panel {
+  faces: number[];
+  pts: Vec3[];
+  scr: P2[];
+  normal: Vec3;
+  center: Vec3;
+  depth: number;
+  box: number[];
 }
 
-type Plane = { pts: Vec3[]; normal: Vec3; center: Vec3; depth: number };
-
 const PLANE_EPS = 1e-6;
-const SCREEN_EPS = 1e-4;
 
-/** +1: all of `b` is on the camera's side of `a`'s plane; -1: all beyond it; 0: straddles or coplanar. */
-function side(a: Plane, b: Plane, eye: Vec3): number {
+/** +1: all of `b` is on the camera's side of `a`'s plane; −1: all beyond it; 0: straddles or coplanar. */
+function planeSide(a: Panel, b: Panel, eye: Vec3): number {
   const n = a.normal;
   const cam = dot(n, sub(eye, a.center)) >= 0 ? 1 : -1;
   let pos = false, neg = false;
@@ -83,20 +46,12 @@ function side(a: Plane, b: Plane, eye: Vec3): number {
     const d = dot(n, sub(v, a.center)) * cam;
     if (d > PLANE_EPS) pos = true;
     else if (d < -PLANE_EPS) neg = true;
+    if (pos && neg) return 0;
   }
-  return pos && !neg ? 1 : neg && !pos ? -1 : 0;
+  return pos ? 1 : neg ? -1 : 0;
 }
 
-/** Negative when `a` must be painted before (behind) `b`. */
-function compare(a: Plane, b: Plane, eye: Vec3): number {
-  const s = side(a, b, eye);
-  if (s) return -s;
-  const t = side(b, a, eye);
-  if (t) return t;
-  return b.depth - a.depth;
-}
-
-function overlaps(p: [number, number][], q: [number, number][]): boolean {
+function overlaps(p: P2[], q: P2[]): boolean {
   for (const poly of [p, q]) {
     for (let i = 0; i < poly.length; i++) {
       const a = poly[i], b = poly[(i + 1) % poly.length];
@@ -106,78 +61,39 @@ function overlaps(p: [number, number][], q: [number, number][]): boolean {
       let p0 = Infinity, p1 = -Infinity, q0 = Infinity, q1 = -Infinity;
       for (const v of p) { const d = (v[0] * nx + v[1] * ny) / len; if (d < p0) p0 = d; if (d > p1) p1 = d; }
       for (const v of q) { const d = (v[0] * nx + v[1] * ny) / len; if (d < q0) q0 = d; if (d > q1) q1 = d; }
-      if (p1 <= q0 + SCREEN_EPS || q1 <= p0 + SCREEN_EPS) return false;
+      if (p1 <= q0 + 1e-4 || q1 <= p0 + 1e-4) return false;
     }
   }
   return true;
 }
 
-/** Faces joined by unbent edges form one rigid, coplanar panel. */
-export function panels(p: Pattern, edgeAngles: ArrayLike<number>): number[][] {
-  const parent = p.faces.map((_, i) => i);
-  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
-  p.edges.forEach((e, i) => {
-    if (e.faces.length === 2 && Math.abs(edgeAngles[i] || 0) < 1e-9) parent[find(e.faces[0])] = find(e.faces[1]);
-  });
-  const groups = new Map<number, number[]>();
-  p.faces.forEach((_, f) => {
-    const root = find(f);
-    const g = groups.get(root);
-    if (g) g.push(f); else groups.set(root, [f]);
-  });
-  return [...groups.values()];
-}
-
-interface Group { faces: number[]; pts: Vec3[]; normal: Vec3; center: Vec3; depth: number; box: number[] }
-
-/**
- * Back-to-front paint order of panels (groups of coplanar faces). Panels are
- * painted whole — all fills, then all lines — so a neighbouring face in the
- * same panel can never cover another's edge.
- */
-export function paintOrder(views: View[], groups: number[][] = views.map((_, i) => [i]), cam: Camera = defaultCamera): number[][] {
+/** Back-to-front order of panels. */
+export function paintOrder(panels: Panel[], cam: Camera = defaultCamera): number[] {
   const eye: Vec3 = [0, 0, cam.distance];
-  const gs: Group[] = groups.map((faces) => {
-    const pts = faces.flatMap((f) => views[f].pts);
-    const center: Vec3 = [0, 0, 0];
-    const box = [Infinity, Infinity, -Infinity, -Infinity];
-    for (const f of faces) {
-      const v = views[f];
-      for (let k = 0; k < 3; k++) center[k] += v.center[k] / faces.length;
-      box[0] = Math.min(box[0], v.box[0]); box[1] = Math.min(box[1], v.box[1]);
-      box[2] = Math.max(box[2], v.box[2]); box[3] = Math.max(box[3], v.box[3]);
-    }
-    const d = sub(eye, center);
-    return { faces, pts, normal: views[faces[0]].normal, center, depth: Math.hypot(d[0], d[1], d[2]), box };
-  });
-  const hit = (a: number[], b: number[]) => a[2] > b[0] && b[2] > a[0] && a[3] > b[1] && b[3] > a[1];
-  const n = gs.length;
-  const after: number[][] = gs.map(() => []);
+  const n = panels.length;
+  const hulls = panels.map((p) => hull(p.scr));
+  const after: number[][] = panels.map(() => []);
   const indeg = new Int32Array(n);
   for (let i = 0; i < n; i++) {
+    const a = panels[i];
     for (let j = i + 1; j < n; j++) {
-      const a = gs[i], b = gs[j];
-      if (!hit(a.box, b.box)) continue;
-      const touching = a.faces.some((f) => b.faces.some((g) =>
-        hit(views[f].box, views[g].box) && overlaps(views[f].scr, views[g].scr)));
-      if (!touching) continue;
-      if (compare(a, b, eye) < 0) { after[i].push(j); indeg[j]++; }
-      else { after[j].push(i); indeg[i]++; }
+      const b = panels[j];
+      if (a.box[2] <= b.box[0] || b.box[2] <= a.box[0] || a.box[3] <= b.box[1] || b.box[3] <= a.box[1]) continue;
+      if (!overlaps(hulls[i], hulls[j])) continue;
+      let c = -planeSide(a, b, eye);
+      if (!c) c = planeSide(b, a, eye);
+      if (!c) c = b.depth - a.depth;
+      if (c < 0) { after[i].push(j); indeg[j]++; } else { after[j].push(i); indeg[i]++; }
     }
   }
-  // Kahn's algorithm; among free panels take the farthest first. Cycles fall back to depth.
-  const order: number[][] = [];
+  const order: number[] = [];
   const done = new Uint8Array(n);
   for (let k = 0; k < n; k++) {
     let pick = -1;
-    for (let i = 0; i < n; i++) {
-      if (!done[i] && indeg[i] === 0 && (pick < 0 || gs[i].depth > gs[pick].depth)) pick = i;
-    }
-    if (pick < 0) {
-      for (let i = 0; i < n; i++) if (!done[i] && (pick < 0 || gs[i].depth > gs[pick].depth)) pick = i;
-    }
+    for (let i = 0; i < n; i++) if (!done[i] && indeg[i] === 0 && (pick < 0 || panels[i].depth > panels[pick].depth)) pick = i;
+    if (pick < 0) for (let i = 0; i < n; i++) if (!done[i] && (pick < 0 || panels[i].depth > panels[pick].depth)) pick = i;
     done[pick] = 1;
-    order.push(gs[pick].faces);
+    order.push(pick);
     for (const j of after[pick]) indeg[j]--;
   }
   return order;
@@ -186,79 +102,197 @@ export function paintOrder(views: View[], groups: number[][] = views.map((_, i) 
 const SVG = 'http://www.w3.org/2000/svg';
 const r = (v: number) => Math.round(v * 1000) / 1000;
 
+interface Slot {
+  fill: SVGPathElement;
+  tex: SVGPathElement;
+  pattern: SVGPatternElement;
+  lines: SVGGElement;
+  mem: SVGPathElement;
+  act: SVGPathElement;
+  edge: SVGPathElement;
+  cache: string[];
+}
+
 /**
- * Keeps, per face, a fill path and a group of three stroke layers (crease
- * memory, active-fold hint, edges), and updates them each frame. Looks are pure
- * CSS: the scene only supplies geometry, which side is showing, and a light
- * percentage.
+ * Draws one frame into an <svg> group. Looks are pure CSS: the scene supplies
+ * geometry, which side of the paper is showing (`.front` / `.back`), a light
+ * percentage per panel (`--f`), and an optional paper texture.
  */
 export class SvgScene {
-  private fills: SVGPathElement[] = [];
-  private lines: SVGGElement[] = [];
-  private paths: SVGPathElement[][] = [];
-  private cache: string[][] = [];
-  private orderKey = '';
+  private slots: Slot[] = [];
+  private defs: SVGDefsElement;
+  private image: SVGImageElement;
+  private uid = Math.random().toString(36).slice(2, 8);
 
-  constructor(private root: SVGGElement, private p: Pattern, private cam: Camera = defaultCamera) {
+  constructor(private root: SVGGElement, private m: Folded, private cam: Camera = defaultCamera) {
     root.textContent = '';
+    this.defs = document.createElementNS(SVG, 'defs');
+    this.image = document.createElementNS(SVG, 'image');
+    this.image.id = `${this.uid}-img`;
+    for (const [k, v] of [['width', '2'], ['height', '2'], ['preserveAspectRatio', 'none']]) this.image.setAttribute(k, v);
+    this.defs.appendChild(this.image);
+    root.appendChild(this.defs);
+  }
+
+  /** Paper grain image (data: or blob: URL), mapped onto the sheet. */
+  setTexture(href: string): void {
+    this.image.setAttribute('href', href);
+  }
+
+  private slot(i: number): Slot {
+    let s = this.slots[i];
+    if (s) return s;
     const el = <K extends keyof SVGElementTagNameMap>(tag: K, cls?: string) => {
       const n = document.createElementNS(SVG, tag);
       if (cls) n.setAttribute('class', cls);
       return n;
     };
-    for (let f = 0; f < p.faces.length; f++) {
-      const fill = el('path', 'f');
-      const g = el('g');
-      const layer = ['m', 'a', 'e'].map((cls) => g.appendChild(el('path', cls)));
-      root.append(fill, g);
-      this.fills.push(fill);
-      this.lines.push(g);
-      this.paths.push(layer);
-      this.cache.push(['', '', '', '', '', '']);
-    }
+    const pattern = el('pattern');
+    pattern.id = `${this.uid}-t${i}`;
+    pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+    pattern.setAttribute('width', '2');
+    pattern.setAttribute('height', '2');
+    const use = el('use');
+    use.setAttribute('href', `#${this.uid}-img`);
+    pattern.appendChild(use);
+    this.defs.appendChild(pattern);
+    const fill = el('path', 'f');
+    const tex = el('path', 't');
+    tex.style.fill = `url(#${pattern.id})`;
+    const lines = el('g');
+    const mem = lines.appendChild(el('path', 'm'));
+    const act = lines.appendChild(el('path', 'a'));
+    const edge = lines.appendChild(el('path', 'e'));
+    this.root.append(fill, tex, lines);
+    s = { fill, tex, pattern, lines, mem, act, edge, cache: ['', '', '', '', '', '', '', ''] };
+    this.slots[i] = s;
+    return s;
   }
 
-  render(frame: Frame, transforms: Mat[]): void {
-    const p = this.p;
-    const views = project(p, transforms, frame.pose, this.cam);
-    for (let f = 0; f < views.length; f++) {
-      const v = views[f];
-      const face = p.faces[f];
-      let fill = '', mem = '', act = '', edge = '';
-      for (let i = 0; i < face.length; i++) {
-        const a = v.scr[i], b = v.scr[(i + 1) % face.length];
-        const seg = `M${r(a[0])} ${r(a[1])}L${r(b[0])} ${r(b[1])}`;
-        fill += (i ? 'L' : 'M') + r(a[0]) + ' ' + r(a[1]);
-        const e = p.faceEdges[f][i];
-        const s = p.edges[e].faces.length < 2 ? EDGE_FOLDED : frame.edgeState[e];
-        if (s & EDGE_FOLDED) edge += seg;
-        else {
-          if (s & EDGE_MEMORY) mem += seg;
-          if (s & EDGE_ACTIVE) act += seg;
+  render(frame: Frame): void {
+    const m = this.m;
+    const nF = m.faces.length;
+    const M = poseMatrix(frame.pose);
+    const D = this.cam.distance;
+    const eye: Vec3 = [0, 0, D];
+
+    // Faces in world space.
+    const W: Mat[] = new Array(nF);
+    const pts: Vec3[][] = new Array(nF);
+    const scr: P2[][] = new Array(nF);
+    const nModel: Vec3[] = new Array(nF);
+    for (let f = 0; f < nF; f++) {
+      const T = frame.T[f];
+      nModel[f] = [T[2], T[6], T[10]];
+      W[f] = mul(M, mul(translate(0, 0, frame.z[f]), T));
+      pts[f] = m.faces[f].map((v) => apply(W[f], m.verts[v][0], m.verts[v][1], 0));
+      scr[f] = pts[f].map(([x, y, z]) => { const k = D / (D - z); return [x * k, -y * k] as P2; });
+    }
+
+    // Crease states and panels.
+    const parent = Int32Array.from({ length: nF }, (_, i) => i);
+    const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+    const flat = new Uint8Array(m.edges.length);
+    m.edges.forEach((e, i) => {
+      if (e.faces.length !== 2) return;
+      const [f, g] = e.faces;
+      if (dot(nModel[f], nModel[g]) > 1 - 1e-9) {
+        flat[i] = 1;
+        if (Math.abs(frame.z[f] - frame.z[g]) < 1e-9) parent[find(f)] = find(g);
+      }
+    });
+    const groups = new Map<number, number[]>();
+    for (let f = 0; f < nF; f++) {
+      const k = find(f);
+      const g = groups.get(k);
+      if (g) g.push(f); else groups.set(k, [f]);
+    }
+    const panels: Panel[] = [];
+    for (const faces of groups.values()) {
+      const P: Vec3[] = [], S: P2[] = [];
+      const center: Vec3 = [0, 0, 0];
+      const box = [Infinity, Infinity, -Infinity, -Infinity];
+      for (const f of faces) {
+        for (let i = 0; i < pts[f].length; i++) {
+          P.push(pts[f][i]); S.push(scr[f][i]);
+          const [x, y] = scr[f][i];
+          if (x < box[0]) box[0] = x; if (x > box[2]) box[2] = x;
+          if (y < box[1]) box[1] = y; if (y > box[3]) box[3] = y;
         }
       }
-      fill += 'Z';
-      const side = v.front ? 'f' : 'b';
-      const tone = `color-mix(in oklab,var(--_l${side}) ${Math.round((0.15 + 0.85 * v.light) * 100)}%,var(--_s${side}))`;
-      const cls = v.front ? 'front' : 'back';
-      const c = this.cache[f];
-      const [pm, pa, pe] = this.paths[f];
-      if (c[0] !== fill) this.fills[f].setAttribute('d', (c[0] = fill));
-      if (c[1] !== mem) pm.setAttribute('d', (c[1] = mem));
-      if (c[2] !== act) pa.setAttribute('d', (c[2] = act));
-      if (c[3] !== edge) pe.setAttribute('d', (c[3] = edge));
-      if (c[4] !== tone) this.fills[f].style.setProperty('--f', (c[4] = tone));
-      if (c[5] !== cls) this.lines[f].setAttribute('class', (c[5] = cls));
+      for (const p of P) { center[0] += p[0] / P.length; center[1] += p[1] / P.length; center[2] += p[2] / P.length; }
+      const w = W[faces[0]];
+      const d = sub(eye, center);
+      panels.push({ faces, pts: P, scr: S, normal: normalize([w[2], w[6], w[10]]), center, depth: Math.hypot(d[0], d[1], d[2]), box });
     }
-    const order = paintOrder(views, panels(p, frame.edgeAngles), this.cam);
-    const key = order.map((g) => g.join(',')).join('|');
-    if (key !== this.orderKey) {
-      this.orderKey = key;
-      for (const g of order) {
-        for (const f of g) this.root.appendChild(this.fills[f]);
-        for (const f of g) this.root.appendChild(this.lines[f]);
+
+    const order = paintOrder(panels, this.cam);
+    const k = frame.step;
+    for (let i = 0; i < order.length; i++) {
+      const p = panels[order[i]];
+      const s = this.slot(i);
+      let fill = '', mem = '', act = '', edge = '';
+      for (const f of p.faces) {
+        const poly = scr[f];
+        for (let v = 0; v < poly.length; v++) fill += (v ? 'L' : 'M') + r(poly[v][0]) + ' ' + r(poly[v][1]);
+        fill += 'Z';
+        m.faceEdges[f].forEach((e, v) => {
+          const a = poly[v], b = poly[(v + 1) % poly.length];
+          const seg = `M${r(a[0])} ${r(a[1])}L${r(b[0])} ${r(b[1])}`;
+          const E = m.edges[e];
+          if (E.faces.length < 2 || !flat[e]) edge += seg;
+          else {
+            const g = E.faces[0] === f ? E.faces[1] : E.faces[0];
+            if (E.born <= k) mem += seg;
+            if (frame.group[f] !== frame.group[g]) act += seg;
+          }
+        });
       }
+      const w = W[p.faces[0]];
+      const front = dot(p.normal, sub(eye, p.center)) > 0;
+      const vis: Vec3 = front ? p.normal : [-p.normal[0], -p.normal[1], -p.normal[2]];
+      const light = Math.max(0, dot(vis, this.cam.light));
+      const side = front ? 'f' : 'b';
+      const tone = `color-mix(in oklab,var(--_l${side}) ${Math.round((0.15 + 0.85 * light) * 100)}%,var(--_s${side}))`;
+      const cls = front ? 'front' : 'back';
+      const fv = m.faces[p.faces[0]];
+      let cx = 0, cy = 0;
+      for (const v of fv) { cx += m.verts[v][0] / fv.length; cy += m.verts[v][1] / fv.length; }
+      const tex = textureMatrix(w, D, cx, cy);
+      const c = s.cache;
+      if (c[0] !== fill) { s.fill.setAttribute('d', (c[0] = fill)); s.tex.setAttribute('d', fill); }
+      if (c[1] !== mem) s.mem.setAttribute('d', (c[1] = mem));
+      if (c[2] !== act) s.act.setAttribute('d', (c[2] = act));
+      if (c[3] !== edge) s.edge.setAttribute('d', (c[3] = edge));
+      if (c[4] !== tone) s.fill.style.setProperty('--f', (c[4] = tone));
+      if (c[5] !== cls) s.lines.setAttribute('class', (c[5] = cls));
+      if (c[6] !== tex) s.pattern.setAttribute('patternTransform', (c[6] = tex));
+      if (c[7] !== '1') { c[7] = '1'; s.fill.style.display = s.tex.style.display = s.lines.style.display = ''; }
+    }
+    for (let i = order.length; i < this.slots.length; i++) {
+      const s = this.slots[i];
+      if (s.cache[7] !== '0') { s.cache[7] = '0'; s.fill.style.display = s.tex.style.display = s.lines.style.display = 'none'; }
     }
     this.root.style.opacity = String(r(frame.pose.o));
   }
+}
+
+/**
+ * Affine map from texture space (the sheet, u = x + 1, v = 1 − y, 2×2 units)
+ * to the screen, linearised around sheet point (cx, cy) of this panel.
+ */
+function textureMatrix(w: Mat, D: number, cx: number, cy: number): string {
+  const pr = (x: number, y: number): P2 => {
+    const [X, Y, Z] = apply(w, x, y, 0);
+    const k = D / (D - Z);
+    return [X * k, -Y * k];
+  };
+  const h = 0.25;
+  const o = pr(cx, cy), px = pr(cx + h, cy), py = pr(cx, cy + h);
+  // ∂/∂u = ∂/∂x and ∂/∂v = −∂/∂y
+  const a = (px[0] - o[0]) / h, b = (px[1] - o[1]) / h;
+  const c = -(py[0] - o[0]) / h, d = -(py[1] - o[1]) / h;
+  const u = cx + 1, v = 1 - cy;
+  const e = o[0] - a * u - c * v, f = o[1] - b * u - d * v;
+  return `matrix(${[a, b, c, d, e, f].map((n) => Math.round(n * 1e4) / 1e4).join(' ')})`;
 }
