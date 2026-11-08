@@ -22,7 +22,7 @@ export interface Camera {
 export const defaultCamera: Camera = { distance: 5, light: normalize([-0.45, 0.7, 0.75]) };
 
 export function poseMatrix(p: Pose): Mat {
-  return mul(translate(p.tx, p.ty, p.tz), mul(scale(p.s), mul(rotX(p.rx * DEG), mul(rotY(p.ry * DEG), rotZ(p.rz * DEG)))));
+  return mul(translate(p.tx, p.ty, p.tz), mul(rotZ(p.spin * DEG), mul(scale(p.s), mul(rotX(p.rx * DEG), mul(rotY(p.ry * DEG), rotZ(p.rz * DEG))))));
 }
 
 interface Panel {

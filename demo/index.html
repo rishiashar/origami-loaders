@@ -12,7 +12,10 @@
 <style>
   :root {
     color-scheme: light;
-    --card-bg: oklch(0.972 0.003 95);
+    --card-bg: oklch(0.978 0.003 95);
+    --ascii: oklch(0.5 0.006 95 / 0.42);
+    --device-line: oklch(0.82 0.004 95);
+    --elevation-soft: 0 18px 40px -24px oklch(0 0 0 / 0.18);
     --bg: oklch(0.994 0.002 95);
     --text: oklch(0.245 0.008 95);
     --muted: oklch(0.53 0.008 95);
@@ -60,7 +63,10 @@
     --splash-bg: oklch(0.215 0.006 85);
     --accent: oklch(0.74 0.12 255);
     --focus: oklch(0.935 0.004 95);
-    --card-bg: oklch(0.205 0.004 95);
+    --card-bg: oklch(0.198 0.004 95);
+    --ascii: oklch(0.8 0.004 95 / 0.17);
+    --device-line: oklch(0.42 0.004 95);
+    --elevation-soft: none;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -80,7 +86,10 @@
       --splash-bg: oklch(0.215 0.006 85);
       --accent: oklch(0.74 0.12 255);
       --focus: oklch(0.935 0.004 95);
-      --card-bg: oklch(0.205 0.004 95);
+      --card-bg: oklch(0.198 0.004 95);
+      --ascii: oklch(0.8 0.004 95 / 0.17);
+      --device-line: oklch(0.42 0.004 95);
+      --elevation-soft: none;
     }
   }
 
@@ -263,23 +272,42 @@
     left: 50%;
     translate: -50% 0;
   }
-  .examples { list-style: none; padding: 0; display: grid; gap: 28px; }
+  .examples { list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 880px) { .examples { grid-template-columns: 1fr; } }
 
-  /* Each example is a card: a quiet surface, the app on it, and a footer that says what to do. */
-  .card { border-radius: 20px; background: var(--card-bg); overflow: hidden; }
-  .card-stage { display: grid; place-items: center; padding: 56px 40px; min-height: 380px; }
-  .card-footer {
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-    gap: 14px 24px;
-    padding: 18px 24px 20px;
-    box-shadow: inset 0 1px var(--hairline);
+  /* Cards: a sentence on top, the app below, zoomed in and cropped by the card. */
+  .card {
+    position: relative;
+    height: 560px;
+    border-radius: 20px;
+    background: var(--card-bg);
+    box-shadow: 0 0 0 1px var(--hairline);
+    overflow: hidden;
+    isolation: isolate;
   }
-  .card-footer .title { display: block; }
-  .card-footer .description { display: block; color: var(--muted); max-width: 60ch; }
+  .ascii {
+    position: absolute; inset: 0; z-index: -1;
+    margin: 0;
+    font: 11px / 13px var(--mono);
+    color: var(--ascii);
+    white-space: pre;
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+    -webkit-mask-image: radial-gradient(130% 85% at 60% 78%, #000 25%, transparent 80%);
+    mask-image: radial-gradient(130% 85% at 60% 78%, #000 25%, transparent 80%);
+  }
+  .card-text { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 26px 26px 0; }
+  .card-text p { font-size: 15px; line-height: 1.5; color: var(--muted); max-width: 34ch; text-wrap: pretty; }
+  .card-text b { color: var(--text); font-weight: var(--weight-medium); }
+  .card-text .action { flex: none; margin-top: -3px; }
+  .visual { position: absolute; left: 0; right: 0; top: 132px; bottom: 0; overflow: hidden; }
+  .visual > .mock, .visual > .device { position: absolute; transform-origin: 0 0; }
+
   .action {
     position: relative;
     display: inline-flex; align-items: center; gap: 6px;
-    height: 32px; padding: 0 12px 0 10px;
+    height: 30px; padding: 0 11px 0 9px;
     border-radius: 8px;
     background: var(--win-bg);
     box-shadow: var(--elevation);
@@ -287,15 +315,33 @@
     white-space: nowrap;
     transition: scale 150ms ease-out, background-color 150ms ease-out;
   }
-  .action::before { content: ""; position: absolute; inset: -6px; }
+  .action::before { content: ""; position: absolute; inset: -7px; }
   .action:active { scale: 0.96; }
   .action:disabled { color: var(--faint); cursor: default; scale: 1; }
   .action .icon { width: 14px; height: 14px; }
   @media (hover: hover) and (pointer: fine) { .action:not(:disabled):hover { background: var(--chrome-bg); } }
+
+  /* Where each app sits in its card. */
+  #v-browser > .mock { left: 32px; top: 6px; width: 620px; }
+  #v-launch > .device { left: 50%; top: 4px; translate: -50% 0; scale: 1.18; transform-origin: 50% 0; }
+  #v-mail > .device { left: 50%; top: 4px; translate: -50% 0; scale: 1.18; transform-origin: 50% 0; }
+  #v-chat > .mock { left: 32px; top: 6px; width: 640px; }
+  #v-send > .mock { left: 50%; top: 6px; translate: -50% 0; width: 400px; }
+  #v-deploy > .mock { left: 32px; top: 6px; width: 760px; }
   @media (max-width: 600px) {
-    .card-stage { padding: 36px 16px; min-height: 0; }
-    .card-footer { padding: 16px; }
+    .card { height: 500px; }
+    .card-text { padding: 22px 20px 0; }
+    .card-text p { font-size: 14px; }
+    .visual { top: 140px; }
+    #v-browser > .mock, #v-chat > .mock, #v-deploy > .mock { left: 20px; scale: 0.8; }
+    #v-launch > .device, #v-mail > .device { scale: 1.05; }
+    #v-send > .mock { width: 360px; scale: 0.9; transform-origin: 50% 0; }
   }
+
+  /* Phones are drawn, not modelled: one outline, the screen, the island. */
+  .device { width: 236px; height: 486px; border-radius: 44px; background: var(--win-bg); box-shadow: 0 0 0 1.5px var(--device-line), var(--elevation-soft); }
+  .device .screen { border-radius: 44px; background: transparent; }
+  .device .launch-screen { background: var(--splash-bg); }
 
   .browser { width: 100%; max-width: 820px; }
   .chat-window { width: 100%; max-width: 720px; }
@@ -387,8 +433,8 @@
     font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
   }
   .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; }
-  .dot.ok { background: oklch(0.68 0.15 150); }
-  .dot.err { background: oklch(0.62 0.19 27); }
+  .dot.ok { background: var(--muted); }
+  .dot.err { background: oklch(0.62 0.11 27); }
   .dot.new { background: oklch(0.6 0.13 250); }
 
   /* Browser */
@@ -724,7 +770,12 @@
     </svg>
     <ul class="examples wide">
       <li class="card">
-        <div class="card-stage">
+        <pre class="ascii" data-ascii="page" aria-hidden="true"></pre>
+        <div class="card-text">
+          <p><b>Page load.</b> A small crane in the shop&rsquo;s own red holds the page while it loads, and folds in the tab too.</p>
+          <button class="action" type="button" id="act-reload"><svg class="icon"><use href="#i-reload"/></svg>Reload</button>
+        </div>
+        <div class="visual" id="v-browser">
           <div class="mock window browser is-loading" id="ex-browser">
             <div class="tabs">
               <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -756,14 +807,15 @@
             </div>
           </div>
         </div>
-        <div class="card-footer">
-          <div><span class="title">Page load</span><span class="description">A small crane in the shop's red holds the page while it loads. The tab icon folds too.</span></div>
-          <button class="action" type="button" id="act-reload"><svg class="icon"><use href="#i-reload"/></svg>Reload</button>
-        </div>
       </li>
       <li class="card">
-        <div class="card-stage">
-                    <div class="mock phone" aria-hidden="true">
+        <pre class="ascii" data-ascii="breathe" aria-hidden="true"></pre>
+        <div class="card-text">
+          <p><b>App launch.</b> A pleat breathes on the splash screen of a breathing app, then opens on today&rsquo;s sessions.</p>
+          <button class="action" type="button" id="act-relaunch"><svg class="icon"><use href="#i-reload"/></svg>Relaunch</button>
+        </div>
+        <div class="visual" id="v-launch">
+                    <div class="mock device" aria-hidden="true">
               <div class="screen launch-screen" id="launch">
                 <div class="island"></div>
                 <div class="status"><span class="tabular">9:41</span><span class="icons">
@@ -772,22 +824,30 @@
                   <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="16" height="8" rx="2"/><path d="M23 4v4c.8-.3 1.3-1.1 1.3-2S23.8 4.3 23 4Z" opacity="0.4"/></svg>
                 </span></div>
                 <div class="splash">
-                  <origami-loader model="crane" look="paper" data-start="12" style="--ol-front: oklch(0.64 0.16 33)"></origami-loader>
-                  <span class="wordmark">Fold</span>
-                  <span class="tagline">Origami, one step at a time</span>
+                  <origami-loader model="pleat" look="paper" data-start="2" style="--ol-front: oklch(0.7 0.06 155); --ol-back: oklch(0.97 0.012 150); --ol-bg: var(--splash-bg)"></origami-loader>
+                  <span class="wordmark">Breathe</span>
+                  <span class="tagline">Two minutes, just for you</span>
+                </div>
+                <div class="app-home">
+                  <h3>Good morning</h3>
+                  <div class="sub">Three sessions for today</div>
+                  <div class="lesson"><span class="thumb"><origami-loader model="pleat" look="paper" progress="0.12" style="--ol-front: oklch(0.7 0.06 155)"></origami-loader></span><span><b>Morning reset</b><span>2 min · breathing</span></span></div>
+                  <div class="lesson"><span class="thumb"><origami-loader model="pleat" look="paper" progress="0.3" style="--ol-front: oklch(0.72 0.07 85)"></origami-loader></span><span><b>Before a meeting</b><span>4 min · focus</span></span></div>
+                  <div class="lesson"><span class="thumb"><origami-loader model="pleat" look="paper" progress="0.5" style="--ol-front: oklch(0.62 0.05 255)"></origami-loader></span><span><b>Wind down</b><span>8 min · sleep</span></span></div>
                 </div>
                 <div class="home-bar"></div>
               </div>
             </div>
         </div>
-        <div class="card-footer">
-          <div><span class="title">App launch</span><span class="description">The splash screen folds while the app starts, then opens on today's lessons.</span></div>
-          <button class="action" type="button" id="act-relaunch"><svg class="icon"><use href="#i-reload"/></svg>Relaunch</button>
-        </div>
       </li>
       <li class="card">
-        <div class="card-stage">
-                    <div class="mock phone">
+        <pre class="ascii" data-ascii="mail" aria-hidden="true"></pre>
+        <div class="card-text">
+          <p><b>Pull to refresh.</b> Pull the inbox down and an envelope folds under your finger. Let go and it drops in as new mail.</p>
+          <button class="action" type="button" id="act-refresh"><svg class="icon"><use href="#i-down"/></svg>Refresh</button>
+        </div>
+        <div class="visual" id="v-mail">
+                    <div class="mock device">
               <div class="screen mail" id="mail" tabindex="0" role="button" aria-label="Mail inbox. Drag down, or press Enter, to check for new mail.">
                 <div class="island"></div>
                 <div class="status" aria-hidden="true"><span class="tabular">9:41</span><span class="icons">
@@ -796,7 +856,7 @@
                   <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="16" height="8" rx="2"/><path d="M23 4v4c.8-.3 1.3-1.1 1.3-2S23.8 4.3 23 4Z" opacity="0.4"/></svg>
                 </span></div>
                 <div class="mail-nav" aria-hidden="true"><span><svg class="icon"><use href="#i-left"/></svg>Mailboxes</span><span>Edit</span></div>
-                <origami-loader class="mail-loader" id="mail-loader" model="crane" progress="0" texture="none" style="--ol-ink: oklch(0.6 0.005 260); --ol-stroke: 1px" aria-hidden="true"></origami-loader>
+                <origami-loader class="mail-loader" id="mail-loader" model="envelope" progress="0" texture="none" style="--ol-ink: oklch(0.58 0.005 260); --ol-stroke: 1px" aria-hidden="true"></origami-loader>
                 <div class="mail-scroll" id="mail-scroll" aria-hidden="true">
                   <h3 class="mail-title">Inbox</h3>
                   <div class="search"><svg class="icon small"><use href="#i-search"/></svg>Search</div>
@@ -812,13 +872,14 @@
               </div>
             </div>
         </div>
-        <div class="card-footer">
-          <div><span class="title">Pull to refresh</span><span class="description">Drag the inbox down and let go. A small grey crane folds under your finger, like the native spinner.</span></div>
-          <button class="action" type="button" id="act-refresh"><svg class="icon"><use href="#i-down"/></svg>Refresh</button>
-        </div>
       </li>
       <li class="card">
-        <div class="card-stage">
+        <pre class="ascii" data-ascii="think" aria-hidden="true"></pre>
+        <div class="card-text">
+          <p><b>Waiting for a reply.</b> A tiny pleat breathes where the answer will appear, like a typing indicator.</p>
+          <button class="action" type="button" id="act-ask"><svg class="icon"><use href="#i-up"/></svg>Ask a follow-up</button>
+        </div>
+        <div class="visual" id="v-chat">
           <div class="mock window chat-window" id="ex-chat">
             <div class="chrome"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">Assistant</span></div>
             <div class="thread" id="thread" aria-live="polite">
@@ -832,13 +893,14 @@
             </form>
           </div>
         </div>
-        <div class="card-footer">
-          <div><span class="title">Waiting for a reply</span><span class="description">A tiny crane sits where the answer will appear. Ask a follow-up to see it again.</span></div>
-          <button class="action" type="button" id="act-ask"><svg class="icon"><use href="#i-up"/></svg>Ask a follow-up</button>
-        </div>
       </li>
       <li class="card">
-        <div class="card-stage">
+        <pre class="ascii" data-ascii="send" aria-hidden="true"></pre>
+        <div class="card-text">
+          <p><b>Sending a file.</b> The plane folds with the upload, circles once, and flies off when the file is sent.</p>
+          <button class="action" type="button" id="act-send"><svg class="icon"><use href="#i-up"/></svg>Send</button>
+        </div>
+        <div class="visual" id="v-send">
           <div class="mock window transfer-window" id="ex-transfer">
             <div class="chrome"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">Send files</span></div>
             <div class="panes">
@@ -863,13 +925,14 @@
             </div>
           </div>
         </div>
-        <div class="card-footer">
-          <div><span class="title">Sending a file</span><span class="description">The plane folds with the upload, loops once, and flies off when the file is sent.</span></div>
-          <button class="action" type="button" id="act-send"><svg class="icon"><use href="#i-up"/></svg>Send</button>
-        </div>
       </li>
       <li class="card">
-        <div class="card-stage">
+        <pre class="ascii" data-ascii="deploy" aria-hidden="true"></pre>
+        <div class="card-text">
+          <p><b>Deploy.</b> Each build stage is a span of the fold, so the crane in the status column is a real progress bar.</p>
+          <button class="action" type="button" id="act-redeploy"><svg class="icon"><use href="#i-reload"/></svg>Redeploy</button>
+        </div>
+        <div class="visual" id="v-deploy">
           <div class="mock window dash" id="ex-deploy">
             <div class="tabs">
               <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -896,10 +959,6 @@
               </ul>
             </div>
           </div>
-        </div>
-        <div class="card-footer">
-          <div><span class="title">Deploy</span><span class="description">Each build stage is a span of the fold, so the crane in the status column is a real progress bar.</span></div>
-          <button class="action" type="button" id="act-redeploy"><svg class="icon"><use href="#i-reload"/></svg>Redeploy</button>
         </div>
       </li>
     </ul>
@@ -1131,7 +1190,8 @@
     ['Hiro Tanaka', 'now', 'Photos from the workshop', 'Forty cranes on one string. Everyone kept theirs.'],
   ];
   var startY = null, pulled = 0, refreshing = false;
-  var THRESHOLD = 70, FOLD = 0.06;
+  // The pull folds the envelope's first two corners; letting go folds the rest and seals it.
+  var THRESHOLD = 70, FOLD = 0.48;
   function setPull(d) {
     pulled = Math.max(0, d);
     var shown = pulled < 90 ? pulled : 90 + (pulled - 90) * 0.3;
@@ -1161,13 +1221,19 @@
     mailScroll.style.transform = 'translateY(64px)';
     mailLoader.style.opacity = '1';
     var from = parseFloat(mailLoader.getAttribute('progress')) || 0;
-    run(1.5, function (p) { mailLoader.setAttribute('progress', (from + (0.16 - from) * p).toFixed(3)); }, function () {
-      mailScroll.style.transform = '';
-      mailLoader.style.opacity = '0';
-      arrive();
-      setTimeout(function () { mailLoader.setAttribute('progress', '0'); refreshing = false; }, 320);
+    run(1.1, function (p) { mailLoader.setAttribute('progress', (from + (1 - from) * p).toFixed(3)); }, function () {
+      mailLoader.complete();
     });
   }
+  mailLoader.addEventListener('ol-complete', function () {
+    mailScroll.style.transform = '';
+    arrive();
+    setTimeout(function () {
+      mailLoader.style.opacity = '0';
+      mailLoader.setAttribute('progress', '0');
+      refreshing = false;
+    }, 320);
+  });
   mail.addEventListener('pointerdown', function (e) {
     if (refreshing) return;
     startY = e.clientY;
@@ -1203,7 +1269,7 @@
     var row = document.createElement('div');
     row.className = 'thinking';
     var loader = document.createElement('origami-loader');
-    loader.setAttribute('model', 'crane');
+    loader.setAttribute('model', 'pleat');
     loader.setAttribute('theme', effectiveTheme());
     loader.setAttribute('texture', 'none');
     loader.setAttribute('aria-label', 'Writing a reply');
@@ -1307,7 +1373,7 @@
     clearTimeout(launchTimer);
     launchScreen.classList.remove('is-home');
     splashLoader.removeAttribute('paused');
-    splashLoader.seek(9);
+    splashLoader.seek(1);
     launchTimer = setTimeout(function () { launchScreen.classList.add('is-home'); splashLoader.setAttribute('paused', ''); }, 4200);
   }
   onceVisible(launchScreen, launch);
@@ -1323,6 +1389,47 @@
     document.getElementById('tx-send').click();
   });
   document.getElementById('act-redeploy').addEventListener('click', deploy);
+
+  // ---- ASCII backgrounds: a quiet field of characters behind each app, chosen per card.
+  var RAMPS = { page: ' .·:+', breathe: ' .·~', mail: ' .·@', think: ' .·•', send: ' ./', deploy: ' .01' };
+  function hash(x, y) {
+    var h = (x * 374761393 + y * 668265263) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+  }
+  function noise(x, y) {
+    var xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+    var u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    var a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  }
+  function field(kind, x, y, cols, rows) {
+    var dx = x / cols - 0.62, dy = (y / rows - 0.7) * (rows * 13) / (cols * 6.6);
+    var r = Math.sqrt(dx * dx + dy * dy);
+    if (kind === 'breathe') return (0.5 + 0.5 * Math.sin(r * 44)) * Math.max(0, 1 - r * 1.5);
+    if (kind === 'send') return (x + 2 * y) % 7 === 0 ? 0.35 + 0.65 * noise(x * 0.07, y * 0.07) : noise(x * 0.3, y * 0.3) * 0.3;
+    if (kind === 'deploy') return noise(x * 0.32, y * 0.11) > 0.5 ? 0.45 + 0.55 * hash(x, y) : 0.05;
+    return noise(x * 0.11, y * 0.2) * 0.7 + Math.max(0, 0.5 - r) * 0.8;
+  }
+  function paintAscii(pre) {
+    var kind = pre.getAttribute('data-ascii'), ramp = RAMPS[kind] || RAMPS.page;
+    var cols = Math.ceil(pre.clientWidth / 6.6) + 1, rows = Math.ceil(pre.clientHeight / 13) + 1, out = '';
+    for (var y = 0; y < rows; y++) {
+      for (var x = 0; x < cols; x++) {
+        var v = Math.max(0, Math.min(0.999, field(kind, x, y, cols, rows)));
+        out += ramp[Math.floor(v * ramp.length)];
+      }
+      out += '\n';
+    }
+    pre.textContent = out;
+  }
+  var asciiEls = Array.prototype.slice.call(document.querySelectorAll('.ascii'));
+  asciiEls.forEach(paintAscii);
+  var asciiTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(asciiTimer);
+    asciiTimer = setTimeout(function () { asciiEls.forEach(paintAscii); }, 150);
+  });
 
   syncPlay();
   showStep(hero.currentStep);

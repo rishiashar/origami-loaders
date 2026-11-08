@@ -3,6 +3,9 @@ import { Folder } from '../src/fold';
 import { apply } from '../src/math';
 import { buildCrane } from '../src/models/crane';
 import { buildPlane } from '../src/models/plane';
+import { buildPleat } from '../src/models/pleat';
+import { buildEnvelope } from '../src/models/envelope';
+import type { Folded } from '../src/fold';
 import { Player } from '../src/player';
 
 const crane = buildCrane();
@@ -116,5 +119,57 @@ describe('plane', () => {
     const zs = f.T.map((T) => T[10]);
     expect(zs.some((nz) => Math.abs(nz) < 0.2)).toBe(true); // body faces stand on edge…
     expect(zs.filter((nz) => Math.abs(nz) > 0.9).length).toBeGreaterThan(0); // …wings lie flat
+  });
+});
+
+function worstGap(m: Folded) {
+  const p = new Player(m);
+  let worst = 0;
+  for (let k = 0; k < m.steps.length; k++) {
+    for (const u of [0.15, 0.4, 0.6, 0.85, 1]) {
+      const f = p.evaluate(m.starts[k] + m.steps[k].duration * u - 1e-9);
+      for (const e of m.edges) {
+        if (e.faces.length < 2) continue;
+        for (const v of [e.a, e.b]) {
+          const [x, y] = m.verts[v];
+          const A = apply(f.T[e.faces[0]], x, y, 0), B = apply(f.T[e.faces[1]], x, y, 0);
+          worst = Math.max(worst, Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]));
+        }
+      }
+    }
+  }
+  return worst;
+}
+
+describe('pleat', () => {
+  const m = buildPleat();
+  it('never tears, and every breath ends flat', () => {
+    expect(worstGap(m)).toBeLessThan(1e-6);
+    const p = new Player(m);
+    for (let k = 2; k < m.steps.length - 1; k++) {
+      const f = p.evaluate(m.starts[k] + m.steps[k].duration - 1e-9);
+      for (const T of f.T) expect(Math.abs(T[10])).toBeGreaterThan(1 - 1e-6);
+    }
+  });
+  it('opens into a zigzag mid-breath', () => {
+    const p = new Player(m);
+    const f = p.evaluate(m.starts[2] + m.steps[2].duration * 0.5);
+    // alternate panels stand nearly on edge
+    expect(Math.min(...f.T.map((T) => Math.abs(T[10])))).toBeLessThan(0.35);
+  });
+});
+
+describe('envelope', () => {
+  const m = buildEnvelope();
+  it('folds all four corners to the centre without tearing', () => {
+    expect(worstGap(m)).toBeLessThan(1e-6);
+    const p = new Player(m);
+    const k = m.steps.findIndex((s) => s.label === 'Sealed');
+    const f = p.evaluate(m.starts[k] + 1e-6);
+    for (const [x, y] of [[1, 1], [-1, -1], [1, -1], [-1, 1]]) {
+      const fi = m.faces.findIndex((face) => face.some((v) => m.verts[v][0] === x && m.verts[v][1] === y));
+      const q = apply(f.T[fi], x, y, 0);
+      expect(Math.hypot(q[0], q[1])).toBeLessThan(1e-9);
+    }
   });
 });

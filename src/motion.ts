@@ -23,7 +23,7 @@ function bezier(x1: number, y1: number, x2: number, y2: number) {
   };
 }
 
-export type EaseName = 'linear' | 'in' | 'out' | 'inOut' | 'fold' | 'drop' | 'flap';
+export type EaseName = 'linear' | 'in' | 'out' | 'inOut' | 'fold' | 'drop' | 'flap' | 'breathe';
 
 export const eases: Record<EaseName, (t: number) => number> = {
   linear: (t) => t,
@@ -39,16 +39,20 @@ export const eases: Record<EaseName, (t: number) => number> = {
   drop: (t) => 1 - Math.exp(-7.5 * t) * Math.cos(8.5 * t) * (1 - t),
   // Two wing beats that fade out.
   flap: (t) => Math.sin(t * Math.PI * 4) * (1 - t * 0.6),
+  // Out and back: 0 → 1 → 0, slow at both ends, for looping motion like breathing.
+  breathe: (t) => (1 - Math.cos(2 * Math.PI * Math.min(1, Math.max(0, t)))) / 2,
 };
 
 /** Global placement of the model: rotations in degrees, offsets in sheet units. */
 export interface Pose {
   rx: number; ry: number; rz: number;
+  /** Rotation about the line of sight, degrees, applied last (turns the whole picture). */
+  spin: number;
   tx: number; ty: number; tz: number;
   s: number;
   /** Opacity, 0–1. */
   o: number;
 }
 
-export const defaultPose: Pose = { rx: 0, ry: 0, rz: 0, tx: 0, ty: 0, tz: 0, s: 1, o: 1 };
+export const defaultPose: Pose = { rx: 0, ry: 0, rz: 0, spin: 0, tx: 0, ty: 0, tz: 0, s: 1, o: 1 };
 export const POSE_KEYS = Object.keys(defaultPose) as (keyof Pose)[];

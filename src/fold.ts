@@ -1,6 +1,6 @@
 import { DEG, apply, identity, mul, normalize, rotation, translate, type Mat, type Vec3 } from './math';
 import { ccw, centroid, clipConvex, side, signedArea, splitConvex, type P2 } from './geom';
-import { defaultPose, type EaseName, type Pose } from './motion';
+import { defaultPose, eases, type EaseName, type Pose } from './motion';
 
 /**
  * The folding engine.
@@ -387,15 +387,24 @@ export class StepBuilder {
     this.layers.push({ above, below });
   }
 
-  private compose(chain: number[], d: number, free: number[]): Mat {
+  /**
+   * Joints composed at progress d. With `eased`, each joint's own easing is
+   * applied (so an out-and-back ease like 'breathe' really ends where it began);
+   * solved steps always share one progress value.
+   */
+  private compose(chain: number[], d: number, free: number[], eased = false): Mat {
     let M = identity();
-    for (const j of chain) M = mul(jointMatrix(this.joints[j], d, free[this.joints[j].free] ?? 0), M);
+    for (const j of chain) {
+      const J = this.joints[j];
+      const dj = eased && this.nFree === 0 ? eases[J.ease](d) : d;
+      M = mul(jointMatrix(J, dj, free[J.free] ?? 0), M);
+    }
     return M;
   }
 
-  private place(f: Sim, d: number, free: number[]): Mat {
+  private place(f: Sim, d: number, free: number[], eased = false): Mat {
     const ch = this.chains.get(f);
-    return ch ? mul(this.compose(ch, d, free), f.T) : f.T;
+    return ch ? mul(this.compose(ch, d, free, eased), f.T) : f.T;
   }
 
   private solve(): Float64Array[] {
@@ -428,7 +437,7 @@ export class StepBuilder {
     const table = this.solve();
     const at = (d: number) => table.map((t) => sampleTable(t, d));
     const end = at(1), near = at(NEAR_END);
-    const Tend = new Map<Sim, Mat>(F.faces.map((f) => [f, settle(this.place(f, 1, end))]));
+    const Tend = new Map<Sim, Mat>(F.faces.map((f) => [f, settle(this.place(f, 1, end, true))]));
 
     // Stacking: compare every overlapping pair of faces that ends flat.
     type Item = { f: Sim; poly: P2[]; box: number[]; moved: boolean; Tn: Mat };
@@ -442,7 +451,7 @@ export class StepBuilder {
       const ch = this.chains.get(f);
       // Carry the current stacking along as a tiny offset so rigidly moved stacks keep (or reverse) their order.
       const T0 = mul(translate(0, 0, f.rank * 1e-7), f.T);
-      items.push({ f, poly, box, moved: !!ch, Tn: ch ? mul(this.compose(ch, NEAR_END, near), T0) : T0 });
+      items.push({ f, poly, box, moved: !!ch, Tn: ch ? mul(this.compose(ch, NEAR_END, near, true), T0) : T0 });
     }
     const forced = new Map<string, number>();
     for (const { above, below } of this.layers) {

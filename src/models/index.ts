@@ -2,11 +2,18 @@ import type { Folded } from '../fold';
 import { Player } from '../player';
 import { buildCrane } from './crane';
 import { buildPlane } from './plane';
+import { buildPleat } from './pleat';
+import { buildEnvelope } from './envelope';
 
 /** A model is a function that folds it, run once on first use. */
 export type ModelBuilder = () => Folded;
 
-const registry = new Map<string, ModelBuilder>([['crane', buildCrane], ['plane', buildPlane]]);
+const registry = new Map<string, ModelBuilder>([
+  ['crane', buildCrane],
+  ['plane', buildPlane],
+  ['pleat', buildPleat],
+  ['envelope', buildEnvelope],
+]);
 const players = new Map<string, Player>();
 
 /** Add a model so `<origami-loader model="name">` can use it. */
@@ -26,4 +33,4 @@ export function getModel(name: string): Player | undefined {
   return p;
 }
 
-export { buildCrane, buildPlane };
+export { buildCrane, buildPlane, buildPleat, buildEnvelope };

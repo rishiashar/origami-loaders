@@ -20,17 +20,30 @@ const edgeR: P2 = [a, 1 - a / t225];
 /** Wing fold: 11.25° off the keel, so the wing's top edge lands on the keel. */
 const wing: P2 = [-2 * t1125, -1];
 
-const LOOP = 0.6;
+const LOOP = 0.62;
 const RADIUS = 0.42;
+/** Heading on screen in the final, top-down view (spin −40°). */
+const HEADING = (50 * Math.PI) / 180;
+const d0 = [Math.cos(HEADING), Math.sin(HEADING)];
+const n0 = [-d0[1], d0[0]];
+
+/** One banked circle seen from above, then off along the heading, growing smaller. */
 function flight(u: number): Partial<Pose> {
   if (u < LOOP) {
     const θ = 2 * Math.PI * eases.inOut(u / LOOP);
-    // Shrink a little over the top so the loop stays inside the loader's box.
-    const top = (1 - Math.cos(θ)) / 2; // 0 at the start and end of the loop, 1 at the top
-    return { tx: RADIUS * Math.sin(θ), ty: (2 * RADIUS - 0.3) * top, rz: (θ * 180) / Math.PI, s: -0.22 * top };
+    const c = Math.cos(θ), s = Math.sin(θ);
+    const rn = [n0[0] * c - n0[1] * s, n0[0] * s + n0[1] * c];
+    // Pull the far side of the circle back toward the start so it stays inside the box.
+    const far = (1 - c) / 2;
+    return {
+      tx: RADIUS * (n0[0] - rn[0] - n0[0] * far),
+      ty: RADIUS * (n0[1] - rn[1] - n0[1] * far),
+      spin: (θ * 180) / Math.PI,
+      rz: 14 * Math.sin(θ), // a little bank into the turn
+    };
   }
   const b = eases.in((u - LOOP) / (1 - LOOP));
-  return { tx: 2.6 * b, ty: 0.9 * b, tz: 0.3 * b, rz: 360 + 14 * b, o: -b };
+  return { tx: 2.6 * b * d0[0], ty: 2.6 * b * d0[1], spin: 360, s: -0.35 * b, o: -b };
 }
 
 export function buildPlane() {
@@ -67,12 +80,12 @@ export function buildPlane() {
     back = s.fold(nose, wing, { where: (f) => f.sheet[0] > 0, side: [-0.6, -0.8], toward: -1, at: [0.35, 1] });
   });
 
-  F.step({ diagram: 7, label: 'Open the wings', duration: 1.2, ease: 'inOut', pose: { rx: -38, ry: 30, rz: -62, s: 1.3, ty: -0.2 } }, (s) => {
-    s.attach(front, s.hinge(nose, wing, [-0.6, -0.8], -1, 90, { ease: 'inOut' }));
-    s.attach(back, s.hinge(nose, wing, [-0.6, -0.8], 1, 90, { ease: 'inOut' }));
+  // Open the wings into a slight V, and turn to the view from above: the shape everyone knows.
+  F.step({ diagram: 7, label: 'Open the wings', duration: 1.3, ease: 'inOut', pose: { rx: -30, ry: 90, rz: 0, spin: -40, s: 1.25, ty: 0, tx: 0 } }, (s) => {
+    s.attach(front, s.hinge(nose, wing, [-0.6, -0.8], -1, 82, { ease: 'inOut' }));
+    s.attach(back, s.hinge(nose, wing, [-0.6, -0.8], 1, 82, { ease: 'inOut' }));
   });
   F.step({ diagram: 7, label: 'Ready to fly', duration: 0.6, ease: 'inOut' });
-  // One loop-the-loop, nose pitching all the way round, then off up and away.
   F.step({ diagram: 7, label: 'Fly', duration: 2.1, phase: 'outro', ease: 'linear', path: flight });
 
   return F.compile();
