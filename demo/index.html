@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>origami-loaders</title>
+<style>
+  :root {
+    --page: #ecebe6;
+    --text: #1b1b1d;
+    --muted: #6d6c68;
+    --rule: #d9d7d0;
+    --light-tile: #f6f5f1;
+    --dark-tile: #0f0f11;
+    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text);
+    font: 15px/1.5 var(--font);
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 1040px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow, .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  header { margin-bottom: 40px; }
+  h1 {
+    margin: 8px 0 4px;
+    font-size: clamp(28px, 5vw, 40px);
+    font-weight: 600;
+    letter-spacing: -.02em;
+    line-height: 1.1;
+  }
+  .subtitle { margin: 0; color: var(--muted); font-size: 16px; }
+  h2 { margin: 72px 0 20px; }
+  h2.label { padding-top: 16px; border-top: 1px solid var(--rule); }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    background: var(--light-tile);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+  }
+  .group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .group.grow { flex: 1 1 260px; min-width: 220px; }
+  button {
+    font: inherit;
+    font-size: 13px;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 6px 14px;
+    min-height: 34px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  button:hover { border-color: #b9b7af; }
+  button[aria-pressed="true"], button.on { background: var(--text); color: var(--light-tile); border-color: var(--text); }
+  button:focus-visible, input:focus-visible { outline: 2px solid #3b6cff; outline-offset: 2px; }
+  input[type=range] { flex: 1; min-width: 120px; accent-color: var(--text); }
+  input[type=color] {
+    width: 32px; height: 32px; padding: 0;
+    border: 1px solid var(--rule); border-radius: 50%;
+    background: none; cursor: pointer;
+  }
+  input[type=color]::-webkit-color-swatch-wrapper { padding: 2px; }
+  input[type=color]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+  input[type=color]::-moz-color-swatch { border: 0; border-radius: 50%; }
+  .readout {
+    font: 12px var(--mono);
+    color: var(--muted);
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+  .readout b { color: var(--text); font-weight: 500; }
+
+  /* Tile grid */
+  #grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 260px;
+    padding: 20px 12px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--rule);
+  }
+  .tile[data-theme=light] { background: var(--light-tile); color: #1b1b1d; --cap: #6d6c68; }
+  .tile[data-theme=dark] { background: var(--dark-tile); color: #ededf0; border-color: #1f1f23; --cap: #8c8c93; }
+  .tile figcaption { text-align: center; margin-top: auto; padding-top: 12px; }
+  .tile .name { display: block; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+  .tile .desc { display: block; margin-top: 3px; font-size: 12px; line-height: 1.4; color: var(--cap); }
+  .tile { margin: 0; }
+
+  origami-loader { --s: 180px; width: var(--s); height: var(--s); display: block; }
+
+  /* Big preview */
+  .big { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; }
+  .stage {
+    --s: 360px;
+    display: grid; place-items: center;
+    padding: 32px 16px;
+    border-radius: 14px; border: 1px solid var(--rule);
+    background: var(--light-tile);
+    transition: background .2s;
+  }
+  .stage[data-theme=dark] { background: var(--dark-tile); border-color: #1f1f23; }
+  .stage origami-loader { --s: 360px; }
+  .switchers { display: flex; flex-direction: column; gap: 20px; min-width: 160px; }
+  .switchers .group { gap: 6px; }
+  .switchers .label { width: 100%; }
+
+  footer { margin-top: 72px; color: var(--muted); font-size: 12px; }
+
+  @media (max-width: 860px) {
+    #grid { grid-template-columns: repeat(2, 1fr); }
+    .big { grid-template-columns: 1fr; }
+    .switchers { flex-direction: row; flex-wrap: wrap; gap: 16px 24px; }
+  }
+  @media (max-width: 560px) {
+    main { padding: 32px 14px 64px; }
+    #grid { gap: 8px; }
+    .tile { padding: 14px 8px 12px; min-height: 220px; }
+    origami-loader { --s: min(150px, 34vw); }
+    .stage { padding: 20px 8px; }
+    .stage origami-loader { --s: min(360px, calc(100vw - 56px)); }
+    h2 { margin-top: 48px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Open-source web component</div>
+    <h1>origami-loaders</h1>
+    <p class="subtitle">Crane · steps 1–3 (quick test)</p>
+  </header>
+
+  <section aria-label="Controls">
+    <div class="controls" role="group" aria-label="Global controls">
+      <div class="group">
+        <button id="play" type="button" aria-pressed="false">Pause</button>
+      </div>
+      <div class="group grow">
+        <span class="label">Scrub</span>
+        <input id="scrub" type="range" min="0" max="1" step="0.001" value="0" aria-label="Fold progress">
+        <button id="live" type="button" class="on" aria-pressed="true">Live</button>
+      </div>
+      <div class="group" role="group" aria-label="Speed">
+        <span class="label">Speed</span>
+        <button type="button" data-speed="0.5" aria-pressed="false">0.5×</button>
+        <button type="button" data-speed="1" aria-pressed="true">1×</button>
+        <button type="button" data-speed="2" aria-pressed="false">2×</button>
+      </div>
+      <div class="group">
+        <label class="label" for="ink">Ink</label>
+        <input id="ink" type="color" value="#1b1b1d">
+        <label class="label" for="paper">Paper</label>
+        <input id="paper" type="color" value="#e8573d">
+      </div>
+      <div class="readout">Step <b id="step">—</b></div>
+    </div>
+  </section>
+
+  <section aria-label="Looks and themes">
+    <div id="grid"></div>
+  </section>
+
+  <h2 class="label">Big preview</h2>
+  <section class="big" aria-label="Big preview">
+    <div class="stage" id="stage" data-theme="light">
+      <origami-loader id="big" look="ink" theme="light" style="--ol-bg:#f6f5f1" aria-label="Large preview"></origami-loader>
+    </div>
+    <div class="switchers">
+      <div class="group" id="looks" role="group" aria-label="Look">
+        <span class="label">Look</span>
+        <button type="button" data-look="ink" aria-pressed="true">ink</button>
+        <button type="button" data-look="blueprint" aria-pressed="false">blueprint</button>
+        <button type="button" data-look="graphite" aria-pressed="false">graphite</button>
+        <button type="button" data-look="paper" aria-pressed="false">paper</button>
+      </div>
+      <div class="group" id="themes" role="group" aria-label="Theme">
+        <span class="label">Theme</span>
+        <button type="button" data-theme="light" aria-pressed="true">light</button>
+        <button type="button" data-theme="dark" aria-pressed="false">dark</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>MIT · rishiashar/origami-loaders</footer>
+</main>
+
+<!-- Dev only: removed by scripts/build.mjs, which inlines the bundle at OL_SCRIPT instead. -->
+<script data-dev src="../dist/origami-loaders.iife.js"></script>
+<!-- OL_SCRIPT -->
+
+<script>
+(function () {
+  var LOOKS = [
+    ['ink', 'Line art, hidden lines removed'],
+    ['blueprint', 'See-through wireframe with diagram-style fold lines'],
+    ['graphite', 'Monochrome with soft light shading'],
+    ['paper', 'Two-tone origami paper']
+  ];
+  var BG = { light: '#f6f5f1', dark: '#0f0f11' };
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Build the 4 x 2 tile grid: light themes in the first row, dark in the second.
+  var grid = $('grid');
+  ['light', 'dark'].forEach(function (theme) {
+    LOOKS.forEach(function (l) {
+      var fig = document.createElement('figure');
+      fig.className = 'tile';
+      fig.dataset.theme = theme;
+      fig.innerHTML =
+        '<origami-loader look="' + l[0] + '" theme="' + theme + '" style="--ol-bg:' + BG[theme] + '"></origami-loader>' +
+        '<figcaption><span class="name">' + l[0] + ' · ' + theme + '</span><span class="desc">' + l[1] + '</span></figcaption>';
+      grid.appendChild(fig);
+    });
+  });
+
+  var tiles = Array.prototype.slice.call(grid.querySelectorAll('origami-loader'));
+  var big = $('big');
+  var all = function () { return tiles.concat([big]); };
+
+  var state = { paused: false, speed: 1, ink: null, paper: null };
+
+  // Play / pause
+  var play = $('play');
+  play.addEventListener('click', function () {
+    state.paused = !state.paused;
+    all().forEach(function (el) { el.toggleAttribute('paused', state.paused); });
+    play.textContent = state.paused ? 'Play' : 'Pause';
+    play.setAttribute('aria-pressed', String(state.paused));
+  });
+
+  // Scrubber: dragging pins progress; "Live" resumes playback.
+  var scrub = $('scrub'), live = $('live');
+  function setLive(on) {
+    live.classList.toggle('on', on);
+    live.setAttribute('aria-pressed', String(on));
+  }
+  scrub.addEventListener('input', function () {
+    all().forEach(function (el) { el.setAttribute('progress', scrub.value); });
+    setLive(false);
+  });
+  live.addEventListener('click', function () {
+    all().forEach(function (el) { el.removeAttribute('progress'); });
+    setLive(true);
+  });
+
+  // Speed
+  var speedBtns = Array.prototype.slice.call(document.querySelectorAll('[data-speed]'));
+  speedBtns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.speed = b.dataset.speed;
+      all().forEach(function (el) { el.setAttribute('speed', state.speed); });
+      speedBtns.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    });
+  });
+
+  // Colors: Ink only on light-theme loaders, Paper on every paper-look loader.
+  function syncColors() {
+    all().forEach(function (el) {
+      if (state.ink && el.getAttribute('theme') === 'light') el.style.setProperty('--ol-ink', state.ink);
+      else el.style.removeProperty('--ol-ink');
+      if (state.paper && el.getAttribute('look') === 'paper') el.style.setProperty('--ol-front', state.paper);
+      else el.style.removeProperty('--ol-front');
+    });
+  }
+  $('ink').addEventListener('input', function (e) { state.ink = e.target.value; syncColors(); });
+  $('paper').addEventListener('input', function (e) { state.paper = e.target.value; syncColors(); });
+
+  // Big preview switchers
+  function pick(containerId, attr, apply) {
+    var btns = Array.prototype.slice.call($(containerId).querySelectorAll('button'));
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        apply(b.dataset[attr]);
+        btns.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        syncColors();
+      });
+    });
+  }
+  pick('looks', 'look', function (v) { big.setAttribute('look', v); });
+  pick('themes', 'theme', function (v) {
+    big.setAttribute('theme', v);
+    big.style.setProperty('--ol-bg', BG[v]);
+    $('stage').dataset.theme = v;
+  });
+
+  // Step readout, from the first tile.
+  tiles[0].addEventListener('ol-step', function (e) {
+    var d = e.detail || {};
+    $('step').textContent = d.diagram + ' of 14 · ' + d.label;
+  });
+  function initialStep() {
+    var s = tiles[0].currentStep;
+    if (s) $('step').textContent = s.diagram + ' of 14 · ' + s.label;
+  }
+
+  if (window.customElements && customElements.whenDefined) {
+    customElements.whenDefined('origami-loader').then(initialStep);
+  }
+})();
+</script>
+</body>
+</html>

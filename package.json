@@ -1,0 +1,33 @@
+{
+  "name": "origami-loaders",
+  "version": "0.0.1",
+  "description": "Loaders that fold. 3D origami animations rendered as lightweight SVG.",
+  "type": "module",
+  "license": "MIT",
+  "repository": "github:rishiashar/origami-loaders",
+  "main": "./dist/origami-loaders.js",
+  "module": "./dist/origami-loaders.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/origami-loaders.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "demo": "npm run build && node -e \"console.log(process.cwd()+'/demo/dist/index.html')\"",
+    "capture": "node scripts/capture.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
