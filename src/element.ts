@@ -28,6 +28,10 @@ export class OrigamiLoader extends HTMLElement {
   private visible = true;
   private io?: IntersectionObserver;
   private step = -1;
+  /** Playing the ending after complete(). */
+  private finishing = false;
+  /** Ending played; holds the empty last frame until restart() or a new progress value. */
+  private finished = false;
   private onMotion = () => this.sync();
 
   constructor() {
@@ -64,7 +68,36 @@ export class OrigamiLoader extends HTMLElement {
     if (name === 'model') this.load();
     if (name === 'look') this.applyLook();
     if (name === 'texture') this.loadTexture();
+    if (name === 'progress' && this.hasAttribute('progress')) this.finishing = this.finished = false;
     this.sync();
+  }
+
+  /**
+   * The work is done: play the model's ending (the crane flies off, the plane
+   * leaves), then fire `ol-complete` and stay empty until `restart()` or a new
+   * `progress` value.
+   */
+  complete() {
+    const pl = this.player;
+    if (!pl) return;
+    this.finished = false;
+    this.finishing = true;
+    this.time = pl.model.content[1];
+    if (motion?.matches) {
+      this.finishing = false;
+      this.finished = true;
+    }
+    if (this.hasAttribute('progress')) this.removeAttribute('progress');
+    else this.sync();
+    if (this.finished) this.dispatchEvent(new CustomEvent('ol-complete'));
+  }
+
+  /** Start again from a fresh sheet. */
+  restart() {
+    this.finishing = this.finished = false;
+    this.time = this.player?.model.content[0] ?? 0;
+    this.sync();
+    this.draw();
   }
 
   /** Length of one loop, in seconds. */
@@ -101,6 +134,7 @@ export class OrigamiLoader extends HTMLElement {
     this.scene = new SvgScene(this.svg.firstElementChild as SVGGElement, this.player.model);
     this.frame = undefined;
     this.step = -1;
+    this.finishing = this.finished = false;
     // Start on the flat sheet, so a paused or off-screen loader is never blank.
     this.time = this.player.model.content[0];
     this.loadTexture();
@@ -142,6 +176,8 @@ export class OrigamiLoader extends HTMLElement {
     const pl = this.player;
     if (!pl) return 0;
     const [a, b] = pl.model.content;
+    if (this.finished) return pl.duration;
+    if (this.finishing) return this.time;
     const p = this.progress;
     if (p !== undefined) return a + p * (b - a);
     // Reduced motion: no movement at all — show the finished model.
@@ -169,8 +205,8 @@ export class OrigamiLoader extends HTMLElement {
   }
 
   private sync() {
-    const run = this.isConnected && this.visible && !this.hasAttribute('paused')
-      && this.progress === undefined && !motion?.matches;
+    const run = this.isConnected && this.visible && !this.hasAttribute('paused') && !this.finished
+      && this.progress === undefined && (this.finishing || !motion?.matches);
     if (run && !this.raf) {
       this.last = 0;
       this.raf = requestAnimationFrame(this.tick);
@@ -191,7 +227,20 @@ export class OrigamiLoader extends HTMLElement {
     this.last = now;
     const d = this.duration;
     if (!d) return;
-    this.time = (this.time + dt * this.speed) % d;
+    if (this.finishing) {
+      this.time += dt * this.speed;
+      if (this.time >= d) {
+        this.time = d;
+        this.finishing = false;
+        this.finished = true;
+        this.stop();
+        this.draw();
+        this.dispatchEvent(new CustomEvent('ol-complete'));
+        return;
+      }
+    } else {
+      this.time = (this.time + dt * this.speed) % d;
+    }
     this.draw();
   };
 }

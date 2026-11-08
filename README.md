@@ -68,10 +68,22 @@ const el = document.querySelector('origami-loader');
 el.duration;      // total length of the fold sequence, in seconds
 el.seek(2.5);     // jump to a time, in seconds
 el.currentStep;   // { index, diagram, label }
+el.stepCount;     // steps on the paper diagram: 14 for the crane, 7 for the plane
 
 el.addEventListener('ol-step', (e) => {
   const { index, diagram, label } = e.detail; // fired when the step changes
 });
+```
+
+### Real progress
+
+Set `progress` as work advances, then call `complete()` when it is done. The model plays its ending (the crane flies off, the plane leaves), fires `ol-complete`, and stays empty until you start again.
+
+```js
+upload.on('progress', (p) => el.setAttribute('progress', p)); // 0 to 1
+upload.on('done', () => el.complete());
+el.addEventListener('ol-complete', () => showSent());
+el.restart(); // or set progress again to fold a fresh sheet
 ```
 
 ## Models

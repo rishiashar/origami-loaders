@@ -16,6 +16,8 @@
     --faint: oklch(0.7 0.006 95);
     --hairline: oklch(0 0 0 / 0.09);
     --code-bg: oklch(0.972 0.003 95);
+    --frame-bg: oklch(1 0 0);
+    --dot: oklch(0 0 0 / 0.12);
     --focus: oklch(0.245 0.008 95);
 
     --size-small: 13px;
@@ -40,6 +42,8 @@
       --faint: oklch(0.5 0.006 95);
       --hairline: oklch(1 0 0 / 0.1);
       --code-bg: oklch(0.215 0.004 95);
+      --frame-bg: oklch(0.2 0.004 95);
+      --dot: oklch(1 0 0 / 0.16);
       --focus: oklch(0.935 0.004 95);
     }
   }
@@ -210,6 +214,89 @@
     .looks { grid-template-columns: repeat(2, 1fr); }
   }
 
+
+  /* Examples: plain frames in the page's own materials. One ring, no shadow. */
+  .examples { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px 24px; }
+  @media (max-width: 560px) { .examples { grid-template-columns: 1fr; } }
+  .example .title { display: block; margin-top: 14px; }
+  .example .description { display: block; color: var(--muted); }
+  .frame {
+    position: relative;
+    height: 248px;
+    border-radius: 12px;
+    background: var(--frame-bg);
+    box-shadow: 0 0 0 1px var(--hairline);
+    overflow: hidden;
+    isolation: isolate;
+    font-size: var(--size-small);
+    line-height: 1.5;
+  }
+  .frame origami-loader { --ol-bg: var(--frame-bg); }
+  .frame .toggle { font-size: var(--size-small); }
+  .centered { display: grid; place-items: center; }
+
+  .browser .bar {
+    height: 30px;
+    display: flex;
+    align-items: center;
+    padding-inline: 12px;
+    box-shadow: inset 0 -1px var(--hairline);
+  }
+  .dots { display: flex; gap: 5px; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--dot); }
+  .address { position: absolute; left: 0; right: 0; top: 0; height: 30px; display: grid; place-items: center; color: var(--muted); font-size: 11px; pointer-events: none; }
+  .browser .viewport { height: calc(100% - 30px); display: grid; place-items: center; }
+  .browser origami-loader { width: 150px; height: 150px; }
+
+  .send origami-loader { position: absolute; inset: 12px 0 64px; margin: auto; width: 170px; height: 170px; }
+  .send .file {
+    position: absolute; left: 16px; right: 16px; bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .send .file span { display: block; }
+  .send .meta, .deploy .meta { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .chat { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .chat .you {
+    align-self: flex-end;
+    max-width: 78%;
+    padding: 8px 12px;
+    border-radius: 14px;
+    background: var(--code-bg);
+  }
+  .chat .reply { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .chat .reply origami-loader { width: 72px; height: 72px; margin-inline-start: -10px; }
+
+  .phone {
+    position: relative;
+    width: 128px;
+    height: 224px;
+    border-radius: 24px;
+    background: var(--frame-bg);
+    box-shadow: 0 0 0 1px var(--hairline);
+    overflow: hidden;
+  }
+  .launch { display: grid; place-items: center; align-content: center; gap: 2px; }
+  .launch origami-loader { width: 108px; height: 108px; }
+  .launch .app { color: var(--muted); }
+
+  .pull { cursor: grab; touch-action: none; user-select: none; }
+  .pull:active { cursor: grabbing; }
+  .pull origami-loader { position: absolute; left: 0; right: 0; top: 4px; margin: auto; width: 76px; height: 76px; opacity: 0; transition: opacity 150ms ease-out; }
+  .rows { list-style: none; margin: 0; padding: 18px 14px; display: grid; gap: 14px; background: var(--frame-bg); position: relative; transition: transform 280ms cubic-bezier(0.23, 1, 0.32, 1); }
+  .rows.held { transition: none; }
+  .rows li { display: grid; gap: 5px; }
+  .rows li i { display: block; height: 6px; border-radius: 3px; background: var(--code-bg); }
+  .rows li i + i { width: 62%; }
+
+  .deploy { padding: 16px; display: grid; grid-template-columns: 1fr 150px; grid-template-rows: auto 1fr auto; column-gap: 8px; }
+  .deploy .repo { grid-column: 1; }
+  .deploy .stages { grid-column: 1; list-style: none; padding: 0; margin: 14px 0 0; display: grid; align-content: start; gap: 4px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .deploy .stages li[aria-current="step"] { color: var(--text); }
+  .deploy .stages li.done::after { content: " · done"; color: var(--faint); }
+  .deploy origami-loader { grid-column: 2; grid-row: 1 / 4; align-self: center; width: 150px; height: 150px; }
+  .deploy .actions { grid-column: 1; display: flex; gap: 14px; align-items: center; }
+
   /* Code */
   .code {
     position: relative;
@@ -335,6 +422,69 @@
         <origami-loader look="paper" progress="0.615" aria-hidden="true"></origami-loader>
         <span class="title">Paper</span><span class="description">Coloured on one side</span>
       </button></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Examples</h2>
+    <ul class="examples">
+      <li class="example">
+        <div class="frame browser">
+          <div class="bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+          <span class="address" aria-hidden="true">paper.studio</span>
+          <div class="viewport"><origami-loader model="crane" data-start="5" aria-label="Loading paper.studio"></origami-loader></div>
+        </div>
+        <span class="title">Page load</span>
+        <span class="description">Hold the first screen while a site loads.</span>
+      </li>
+      <li class="example">
+        <div class="frame send">
+          <origami-loader model="plane" id="send-loader" progress="0" aria-label="Sending Spring catalogue.pdf"></origami-loader>
+          <div class="file">
+            <div><span>Spring catalogue.pdf</span><span class="meta" id="send-meta">4.2 MB</span></div>
+            <button class="toggle" type="button" id="send-button" aria-pressed="false">Send</button>
+          </div>
+        </div>
+        <span class="title">Sending a file</span>
+        <span class="description">Progress drives the fold. The plane leaves when the file is sent.</span>
+      </li>
+      <li class="example">
+        <div class="frame chat">
+          <p class="you">Can you summarise this contract in three lines?</p>
+          <p class="reply"><origami-loader model="crane" data-start="15.5" aria-label="Writing a reply"></origami-loader>Thinking</p>
+        </div>
+        <span class="title">Waiting for a reply</span>
+        <span class="description">Fill the pause before an answer arrives.</span>
+      </li>
+      <li class="example">
+        <div class="frame centered">
+          <div class="phone launch"><origami-loader model="crane" look="paper" data-start="11" aria-label="Opening Fold"></origami-loader><span class="app">Fold</span></div>
+        </div>
+        <span class="title">App launch</span>
+        <span class="description">A splash screen while the app starts.</span>
+      </li>
+      <li class="example">
+        <div class="frame centered">
+          <div class="phone pull" id="pull" tabindex="0" role="button" aria-label="Refresh the list. Drag down, or press Enter.">
+            <origami-loader model="crane" id="pull-loader" progress="0" aria-hidden="true"></origami-loader>
+            <ul class="rows" id="pull-rows" aria-hidden="true">
+              <li><i></i><i></i></li><li><i></i><i></i></li><li><i></i><i></i></li><li><i></i><i></i></li><li><i></i><i></i></li>
+            </ul>
+          </div>
+        </div>
+        <span class="title">Pull to refresh</span>
+        <span class="description">Drag the list down. The paper folds as you pull.</span>
+      </li>
+      <li class="example">
+        <div class="frame deploy">
+          <div class="repo"><span>acme/web</span> <span class="meta">main</span></div>
+          <ol class="stages" id="stages"><li>Install</li><li>Build</li><li>Upload</li><li>Live</li></ol>
+          <origami-loader model="crane" id="deploy-loader" progress="0" aria-label="Deploying acme/web"></origami-loader>
+          <div class="actions"><button class="toggle" type="button" id="deploy-button" aria-pressed="false">Deploy</button><span class="meta" id="deploy-meta"></span></div>
+        </div>
+        <span class="title">Deploy</span>
+        <span class="description">Build stages map to folds, so progress means something.</span>
+      </li>
     </ul>
   </section>
 
@@ -474,6 +624,135 @@
         done(false);
       }
     });
+  });
+
+
+  // ---- Examples --------------------------------------------------------
+  // Start the looping examples at different moments so they don't fold in lockstep.
+  document.querySelectorAll('[data-start]').forEach(function (l) { l.seek(parseFloat(l.getAttribute('data-start'))); });
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Simulated work: progress over `seconds`, a little uneven, like a network.
+  function run(seconds, onProgress, onDone) {
+    var start = performance.now();
+    var stalls = [0.18 + Math.random() * 0.1, 0.55 + Math.random() * 0.15];
+    function frame(now) {
+      var t = Math.min(1, (now - start) / (seconds * 1000));
+      var p = t;
+      stalls.forEach(function (s) { if (t > s && t < s + 0.08) p = s; else if (t >= s + 0.08) p = t - 0.08 * (t - s) / (1 - s); });
+      p = Math.min(1, Math.max(0, p));
+      if (reduce) p = Math.floor(p * 4) / 4;
+      onProgress(p);
+      if (t < 1) requestAnimationFrame(frame); else onDone();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // Sending a file
+  var sendLoader = document.getElementById('send-loader');
+  var sendButton = document.getElementById('send-button');
+  var sendMeta = document.getElementById('send-meta');
+  var sending = false;
+  sendButton.addEventListener('click', function () {
+    if (sending) return;
+    sending = true;
+    sendButton.disabled = true;
+    sendButton.setAttribute('aria-pressed', 'true');
+    sendLoader.setAttribute('progress', '0');
+    run(5, function (p) {
+      sendLoader.setAttribute('progress', p.toFixed(3));
+      sendMeta.textContent = 'Sending ' + Math.round(p * 100) + '%';
+    }, function () {
+      sendMeta.textContent = 'Sending 100%';
+      sendLoader.complete();
+    });
+  });
+  sendLoader.addEventListener('ol-complete', function () {
+    sendMeta.textContent = 'Sent';
+    sendButton.textContent = 'Send again';
+    sendButton.disabled = false;
+    sendButton.setAttribute('aria-pressed', 'false');
+    sending = false;
+  });
+
+  // Pull to refresh: the fold follows the finger, 1:1.
+  var pull = document.getElementById('pull');
+  var rows = document.getElementById('pull-rows');
+  var pullLoader = document.getElementById('pull-loader');
+  var startY = null, pulled = 0, refreshing = false;
+  var THRESHOLD = 84, MAX_FOLD = 0.08;
+  function setPull(d) {
+    pulled = Math.max(0, d);
+    var shown = Math.min(pulled, 110) - Math.max(0, pulled - 110) * 0.6;
+    rows.style.transform = 'translateY(' + Math.max(0, shown) + 'px)';
+    pullLoader.style.opacity = String(Math.min(1, pulled / 40));
+    pullLoader.setAttribute('progress', (Math.min(1, pulled / THRESHOLD) * MAX_FOLD).toFixed(3));
+  }
+  function refresh() {
+    if (refreshing) return;
+    refreshing = true;
+    rows.classList.remove('held');
+    rows.style.transform = 'translateY(84px)';
+    pullLoader.style.opacity = '1';
+    var from = parseFloat(pullLoader.getAttribute('progress')) || 0;
+    run(1.6, function (p) { pullLoader.setAttribute('progress', (from + (0.2 - from) * p).toFixed(3)); }, function () {
+      rows.style.transform = '';
+      pullLoader.style.opacity = '0';
+      setTimeout(function () { pullLoader.setAttribute('progress', '0'); refreshing = false; }, 300);
+    });
+  }
+  pull.addEventListener('pointerdown', function (e) {
+    if (refreshing) return;
+    startY = e.clientY;
+    rows.classList.add('held');
+    pull.setPointerCapture(e.pointerId);
+  });
+  pull.addEventListener('pointermove', function (e) { if (startY !== null) setPull(e.clientY - startY); });
+  function release() {
+    if (startY === null) return;
+    startY = null;
+    if (pulled >= THRESHOLD) refresh();
+    else { rows.classList.remove('held'); setPull(0); rows.style.transform = ''; }
+  }
+  pull.addEventListener('pointerup', release);
+  pull.addEventListener('pointercancel', release);
+  pull.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPull(THRESHOLD); refresh(); }
+  });
+
+  // Deploy: four stages, each a span of the fold.
+  var deployLoader = document.getElementById('deploy-loader');
+  var deployButton = document.getElementById('deploy-button');
+  var deployMeta = document.getElementById('deploy-meta');
+  var stages = Array.prototype.slice.call(document.querySelectorAll('#stages li'));
+  var bounds = [0.22, 0.62, 0.92, 1];
+  var deploying = false;
+  function markStage(p, finished) {
+    stages.forEach(function (li, i) {
+      var done = finished ? i < 3 : p >= bounds[i];
+      var current = finished ? i === 3 : !done && (i === 0 || p >= bounds[i - 1]);
+      li.classList.toggle('done', done && i < 3);
+      if (current) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+    });
+  }
+  deployButton.addEventListener('click', function () {
+    if (deploying) return;
+    deploying = true;
+    deployButton.disabled = true;
+    deployButton.setAttribute('aria-pressed', 'true');
+    deployMeta.textContent = '';
+    run(8, function (p) {
+      deployLoader.setAttribute('progress', p.toFixed(3));
+      markStage(p, false);
+    }, function () { deployLoader.complete(); });
+  });
+  deployLoader.addEventListener('ol-complete', function () {
+    markStage(1, true);
+    deployMeta.textContent = 'acme-web.app';
+    deployButton.textContent = 'Deploy again';
+    deployButton.disabled = false;
+    deployButton.setAttribute('aria-pressed', 'false');
+    deploying = false;
   });
 
   syncPlay();
