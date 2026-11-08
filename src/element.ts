@@ -70,6 +70,11 @@ export class OrigamiLoader extends HTMLElement {
   /** Length of one loop, in seconds. */
   get duration(): number { return this.player?.duration ?? 0; }
 
+  /** Number of steps on the model's paper diagram (14 for the crane). */
+  get stepCount(): number {
+    return this.player ? Math.max(...this.player.model.steps.map((s) => s.diagram)) : 0;
+  }
+
   /** The step currently shown. */
   get currentStep(): StepInfo | undefined {
     const p = this.player;
