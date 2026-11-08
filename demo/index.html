@@ -16,8 +16,14 @@
     --faint: oklch(0.7 0.006 95);
     --hairline: oklch(0 0 0 / 0.09);
     --code-bg: oklch(0.972 0.003 95);
-    --frame-bg: oklch(1 0 0);
-    --dot: oklch(0 0 0 / 0.12);
+    --win-bg: oklch(1 0 0);
+    --chrome-bg: oklch(0.973 0.002 95);
+    --hover: oklch(0 0 0 / 0.045);
+    --elevation: 0 0 0 1px oklch(0 0 0 / 0.07), 0 1px 2px oklch(0 0 0 / 0.04), 0 12px 32px -14px oklch(0 0 0 / 0.16);
+    --bezel: oklch(0.22 0.005 95);
+    --photo-bg: oklch(0.955 0.006 85);
+    --splash-bg: oklch(0.977 0.01 85);
+    --accent: oklch(0.55 0.15 255);
     --focus: oklch(0.245 0.008 95);
 
     --size-small: 13px;
@@ -42,13 +48,21 @@
       --faint: oklch(0.5 0.006 95);
       --hairline: oklch(1 0 0 / 0.1);
       --code-bg: oklch(0.215 0.004 95);
-      --frame-bg: oklch(0.2 0.004 95);
-      --dot: oklch(1 0 0 / 0.16);
+      --win-bg: oklch(0.205 0.004 95);
+      --chrome-bg: oklch(0.235 0.004 95);
+      --hover: oklch(1 0 0 / 0.06);
+      --elevation: 0 0 0 1px oklch(1 0 0 / 0.1);
+      --bezel: oklch(0.31 0.005 95);
+      --photo-bg: oklch(0.245 0.005 95);
+      --splash-bg: oklch(0.215 0.006 85);
+      --accent: oklch(0.74 0.12 255);
       --focus: oklch(0.935 0.004 95);
     }
   }
 
   *, *::before, *::after { box-sizing: border-box; }
+  /* The component's :host display would otherwise beat the browser's [hidden] rule. */
+  [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
@@ -215,87 +229,283 @@
   }
 
 
-  /* Examples: plain frames in the page's own materials. One ring, no shadow. */
-  .examples { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px 24px; }
-  @media (max-width: 560px) { .examples { grid-template-columns: 1fr; } }
-  .example .title { display: block; margin-top: 14px; }
-  .example .description { display: block; color: var(--muted); }
-  .frame {
+  /* Examples: real-looking apps, in the page's own materials. -------------- */
+  .wide {
+    width: min(1040px, calc(100vw - 48px));
     position: relative;
-    height: 248px;
-    border-radius: 12px;
-    background: var(--frame-bg);
-    box-shadow: 0 0 0 1px var(--hairline);
-    overflow: hidden;
-    isolation: isolate;
-    font-size: var(--size-small);
-    line-height: 1.5;
+    left: 50%;
+    translate: -50% 0;
   }
-  .frame origami-loader { --ol-bg: var(--frame-bg); }
-  .frame .toggle { font-size: var(--size-small); }
-  .centered { display: grid; place-items: center; }
+  .examples {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 64px 28px;
+    align-items: end;
+  }
+  .example { min-width: 0; }
+  .example.span-2 { grid-column: span 2; }
+  .example .title { display: block; margin-top: 18px; }
+  .example .description { display: block; color: var(--muted); max-width: 46ch; }
+  .example .stage-box { display: grid; place-items: center; }
+  @media (max-width: 880px) {
+    .examples { grid-template-columns: 1fr; }
+    .example.span-2 { grid-column: auto; }
+  }
 
-  .browser .bar {
-    height: 30px;
+  .mock {
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--text);
+    text-align: start;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .mock origami-loader { --ol-bg: var(--win-bg); }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .mock .muted { color: var(--muted); }
+
+  .window { border-radius: 12px; background: var(--win-bg); box-shadow: var(--elevation); overflow: hidden; }
+  .chrome {
     display: flex;
     align-items: center;
-    padding-inline: 12px;
+    gap: 12px;
+    height: 40px;
+    padding: 0 14px;
+    background: var(--chrome-bg);
     box-shadow: inset 0 -1px var(--hairline);
   }
-  .dots { display: flex; gap: 5px; }
-  .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--dot); }
-  .address { position: absolute; left: 0; right: 0; top: 0; height: 30px; display: grid; place-items: center; color: var(--muted); font-size: 11px; pointer-events: none; }
-  .browser .viewport { height: calc(100% - 30px); display: grid; place-items: center; }
-  .browser origami-loader { width: 150px; height: 150px; }
+  .chrome .name { flex: 1; text-align: center; color: var(--muted); font-weight: 500; padding-right: 47px; }
+  .lights { display: flex; gap: 7px; flex: none; }
+  .lights i { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; box-shadow: inset 0 0 0 0.5px oklch(0 0 0 / 0.14); }
+  .lights i:nth-child(2) { background: #febc2e; }
+  .lights i:nth-child(3) { background: #28c840; }
 
-  .send origami-loader { position: absolute; inset: 12px 0 64px; margin: auto; width: 170px; height: 170px; }
-  .send .file {
-    position: absolute; left: 16px; right: 16px; bottom: 14px;
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  }
-  .send .file span { display: block; }
-  .send .meta, .deploy .meta { color: var(--muted); font-variant-numeric: tabular-nums; }
-
-  .chat { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-  .chat .you {
-    align-self: flex-end;
-    max-width: 78%;
-    padding: 8px 12px;
-    border-radius: 14px;
-    background: var(--code-bg);
-  }
-  .chat .reply { display: flex; align-items: center; gap: 6px; color: var(--muted); }
-  .chat .reply origami-loader { width: 72px; height: 72px; margin-inline-start: -10px; }
-
-  .phone {
+  .icon { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .icon.small { width: 12px; height: 12px; }
+  .icon-button {
     position: relative;
-    width: 128px;
-    height: 224px;
-    border-radius: 24px;
-    background: var(--frame-bg);
-    box-shadow: 0 0 0 1px var(--hairline);
-    overflow: hidden;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    color: var(--muted);
+    transition: color 150ms ease-out, background-color 150ms ease-out;
   }
-  .launch { display: grid; place-items: center; align-content: center; gap: 2px; }
-  .launch origami-loader { width: 108px; height: 108px; }
-  .launch .app { color: var(--muted); }
+  .icon-button::before { content: ""; position: absolute; inset: -9px; }
+  @media (hover: hover) and (pointer: fine) {
+    .icon-button:hover { color: var(--text); background: var(--hover); }
+  }
+  .primary {
+    height: 30px;
+    padding: 0 14px;
+    border-radius: 8px;
+    background: var(--text);
+    color: var(--win-bg);
+    font-size: 12.5px;
+    font-weight: 500;
+    transition: scale 150ms ease-out, background-color 150ms ease-out;
+  }
+  .primary:active { scale: 0.96; }
+  .primary:disabled { background: var(--faint); cursor: default; scale: 1; }
+  .text-button { position: relative; color: var(--muted); font-size: 12.5px; transition: color 150ms ease-out; }
+  .text-button::before { content: ""; position: absolute; inset: -12px -8px; }
+  @media (hover: hover) and (pointer: fine) { .text-button:hover { color: var(--text); } }
+  .avatar {
+    width: 24px; height: 24px; flex: none;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--code-bg);
+    color: var(--muted);
+    font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; }
+  .dot.ok { background: oklch(0.68 0.15 150); }
+  .dot.err { background: oklch(0.62 0.19 27); }
+  .dot.new { background: oklch(0.6 0.13 250); }
 
-  .pull { cursor: grab; touch-action: none; user-select: none; }
-  .pull:active { cursor: grabbing; }
-  .pull origami-loader { position: absolute; left: 0; right: 0; top: 4px; margin: auto; width: 76px; height: 76px; opacity: 0; transition: opacity 150ms ease-out; }
-  .rows { list-style: none; margin: 0; padding: 18px 14px; display: grid; gap: 14px; background: var(--frame-bg); position: relative; transition: transform 280ms cubic-bezier(0.23, 1, 0.32, 1); }
-  .rows.held { transition: none; }
-  .rows li { display: grid; gap: 5px; }
-  .rows li i { display: block; height: 6px; border-radius: 3px; background: var(--code-bg); }
-  .rows li i + i { width: 62%; }
+  /* Browser */
+  .tabs { height: 40px; display: flex; align-items: flex-end; gap: 14px; padding: 0 12px 0 14px; background: var(--chrome-bg); }
+  .tabs .lights { align-self: center; }
+  .tab {
+    display: flex; align-items: center; gap: 7px;
+    width: 210px; height: 31px; padding: 0 10px;
+    border-radius: 8px 8px 0 0;
+    background: var(--win-bg);
+    color: var(--text);
+  }
+  .tab .tab-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tab .icon { color: var(--faint); width: 12px; height: 12px; }
+  .favicon { position: relative; width: 16px; height: 16px; flex: none; display: grid; place-items: center; }
+  .favicon origami-loader { position: absolute; inset: -4px; width: 24px; height: 24px; --ol-stroke: 1px; }
+  .favicon .mark { width: 14px; height: 14px; border-radius: 3px; background: var(--text); color: var(--win-bg); font-size: 9px; font-weight: 700; display: grid; place-items: center; }
+  .toolbar { height: 40px; display: flex; align-items: center; gap: 6px; padding: 0 10px; box-shadow: inset 0 -1px var(--hairline); }
+  .address {
+    flex: 1; height: 28px; margin-inline: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    border-radius: 8px;
+    background: var(--chrome-bg);
+    color: var(--muted);
+    white-space: nowrap; overflow: hidden;
+  }
+  .address b { color: var(--text); font-weight: 400; }
 
-  .deploy { padding: 16px; display: grid; grid-template-columns: 1fr 150px; grid-template-rows: auto 1fr auto; column-gap: 8px; }
-  .deploy .repo { grid-column: 1; }
-  .deploy .stages { grid-column: 1; list-style: none; padding: 0; margin: 14px 0 0; display: grid; align-content: start; gap: 4px; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .deploy .stages li[aria-current="step"] { color: var(--text); }
-  .deploy .stages li.done::after { content: " · done"; color: var(--faint); }
-  .deploy origami-loader { grid-column: 2; grid-row: 1 / 4; align-self: center; width: 150px; height: 150px; }
-  .deploy .actions { grid-column: 1; display: flex; gap: 14px; align-items: center; }
+  .site { height: 406px; position: relative; }
+  .site-nav { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-shadow: inset 0 -1px var(--hairline); }
+  .site-nav .logo { font-weight: 600; letter-spacing: -0.01em; }
+  .site-nav nav { display: flex; gap: 18px; color: var(--muted); }
+  .site-body { position: absolute; inset: 48px 0 0; }
+  .site-loading, .site-content { position: absolute; inset: 0; transition: opacity 220ms ease-out, visibility 220ms; }
+  .site-loading { display: grid; place-items: center; }
+  .site-loading origami-loader { width: 64px; height: 64px; }
+  .browser:not(.is-loading) .site-loading, .browser.is-loading .site-content { opacity: 0; visibility: hidden; }
+  .site-content { padding: 26px 24px; display: grid; grid-template-rows: auto 1fr; gap: 18px; }
+  .site-hero { font-size: 17px; font-weight: 500; letter-spacing: -0.01em; }
+  .products { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; min-height: 0; }
+  .product { display: grid; grid-template-rows: 1fr auto; gap: 8px; min-height: 0; }
+  .product .photo { border-radius: 8px; background: var(--photo-bg); min-height: 0; display: grid; place-items: center; overflow: hidden; }
+  .product .photo origami-loader { width: 92%; height: 92%; --ol-bg: var(--photo-bg); }
+  .product .row { display: flex; justify-content: space-between; }
+
+  /* Phones */
+  .phone {
+    width: 236px;
+    aspect-ratio: 236 / 486;
+    padding: 7px;
+    border-radius: 42px;
+    background: var(--bezel);
+    box-shadow: var(--elevation), inset 0 0 0 1px oklch(1 0 0 / 0.08);
+  }
+  .screen { position: relative; height: 100%; border-radius: 35px; overflow: hidden; background: var(--win-bg); }
+  .island { position: absolute; z-index: 2; top: 10px; left: 50%; translate: -50% 0; width: 62px; height: 20px; border-radius: 10px; background: #000; }
+  .status {
+    position: relative; z-index: 1;
+    height: 46px; display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 22px 0 28px;
+    font-size: 12.5px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .status .icons { display: flex; align-items: center; gap: 4px; }
+  .status .icons svg { height: 9px; width: auto; }
+  .status .icons svg:last-child { height: 10px; }
+  .status svg { fill: currentColor; }
+  .home-bar { position: absolute; z-index: 2; bottom: 7px; left: 50%; translate: -50% 0; width: 92px; height: 4px; border-radius: 2px; background: var(--text); opacity: 0.9; }
+
+  .launch-screen { background: var(--splash-bg); }
+  .launch-screen origami-loader { --ol-bg: var(--splash-bg); width: 112px; height: 112px; }
+  .splash { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 4px; }
+  .splash .wordmark { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+  .splash .tagline { color: var(--muted); font-size: 11.5px; }
+
+  .mail { cursor: grab; touch-action: none; }
+  .mail:active { cursor: grabbing; }
+  .mail-nav { position: relative; z-index: 1; display: flex; justify-content: space-between; padding: 2px 16px 0; color: var(--accent); background: var(--win-bg); }
+  .mail-nav span { display: flex; align-items: center; gap: 2px; }
+  .mail-loader { position: absolute; left: 0; right: 0; top: 68px; margin: auto; width: 40px; height: 40px; opacity: 0; transition: opacity 150ms ease-out; }
+  .mail-scroll { position: relative; background: var(--win-bg); transition: transform 320ms cubic-bezier(0.23, 1, 0.32, 1); }
+  .mail-scroll.held { transition: none; }
+  .mail-title { margin: 6px 16px 8px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+  .search { margin: 0 16px 6px; height: 30px; border-radius: 9px; background: var(--code-bg); color: var(--muted); display: flex; align-items: center; gap: 6px; padding: 0 9px; }
+  .mail-list { list-style: none; margin: 0; padding: 0; }
+  .mail-list li { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 280ms cubic-bezier(0.23, 1, 0.32, 1); }
+  .mail-list li.arriving { grid-template-rows: 0fr; }
+  .mail-list .item { overflow: hidden; display: grid; grid-template-columns: 14px 1fr; padding: 0 16px 0 4px; }
+  .mail-list .item > .dot { margin: 15px 0 0 4px; }
+  .mail-list .item > :last-child { padding: 9px 0; box-shadow: inset 0 -1px var(--hairline); min-width: 0; }
+  .mail-list .top { display: flex; justify-content: space-between; gap: 8px; }
+  .mail-list b { font-weight: 600; }
+  .mail-list time { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .mail-list .subject { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mail-list .preview { color: var(--muted); font-size: 11.5px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* Chat */
+  .chat-window { display: grid; grid-template-rows: 40px 1fr auto; height: 486px; }
+  .thread { overflow-y: auto; padding: 20px 22px 8px; display: flex; flex-direction: column; gap: 14px; scrollbar-width: none; }
+  .thread::-webkit-scrollbar { display: none; }
+  .msg { max-width: 82%; white-space: pre-line; }
+  .msg.user { align-self: flex-end; padding: 8px 12px; border-radius: 16px; background: var(--code-bg); }
+  .msg.ai { align-self: flex-start; }
+  .attachment {
+    align-self: flex-end;
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border-radius: 12px;
+    box-shadow: 0 0 0 1px var(--hairline);
+  }
+  .attachment .doc { width: 26px; height: 32px; border-radius: 4px; background: var(--code-bg); display: grid; place-items: center; color: var(--muted); font-size: 8px; font-weight: 700; }
+  .thinking { display: flex; align-items: center; gap: 4px; color: var(--muted); }
+  .thinking origami-loader { width: 26px; height: 26px; margin-inline-start: -4px; --ol-stroke: 1.1px; }
+  .composer {
+    margin: 8px 14px 14px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 6px 6px 10px;
+    border-radius: 14px;
+    box-shadow: 0 0 0 1px var(--hairline);
+    background: var(--win-bg);
+  }
+  .composer input {
+    flex: 1; min-width: 0;
+    border: 0; outline: 0; background: none;
+    font: inherit; font-size: 12.5px; color: var(--text);
+  }
+  .composer input::placeholder { color: var(--faint); }
+  .composer:focus-within { box-shadow: 0 0 0 1px var(--faint); }
+  .send-round { width: 28px; height: 28px; border-radius: 50%; background: var(--text); color: var(--win-bg); display: grid; place-items: center; transition: scale 150ms ease-out; }
+  .send-round:active { scale: 0.96; }
+  .send-round .icon { width: 14px; height: 14px; stroke-width: 2; }
+
+  /* Send files */
+  .transfer-window { height: 400px; display: grid; grid-template-rows: 40px 1fr; }
+  .panes { display: grid; }
+  .pane { grid-area: 1 / 1; padding: 18px; transition: opacity 200ms ease-out, visibility 200ms; }
+  .pane:not([data-active]) { opacity: 0; visibility: hidden; }
+  .compose { display: grid; align-content: start; gap: 12px; }
+  .file-row { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; background: var(--chrome-bg); }
+  .file-row .doc { width: 30px; height: 36px; border-radius: 4px; background: var(--win-bg); box-shadow: 0 0 0 1px var(--hairline); display: grid; place-items: center; color: oklch(0.6 0.17 27); font-size: 8px; font-weight: 700; }
+  .field { display: grid; gap: 4px; color: var(--muted); }
+  .field input {
+    height: 32px; padding: 0 10px; border: 0; border-radius: 8px;
+    box-shadow: 0 0 0 1px var(--hairline);
+    background: var(--win-bg); color: var(--text);
+    font: inherit; font-size: 12.5px;
+  }
+  .compose .actions { display: flex; justify-content: flex-end; margin-top: 4px; }
+  .sending, .sent { display: grid; place-items: center; align-content: center; gap: 2px; text-align: center; }
+  .sending origami-loader { width: 150px; height: 150px; margin-bottom: 4px; }
+  .sent .check { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--code-bg); margin-bottom: 8px; }
+  .sending .text-button, .sent .text-button { margin-top: 14px; }
+
+  /* Deploy dashboard */
+  .dash { height: 400px; display: grid; grid-template-rows: 40px 40px 1fr; }
+  .dash-body { padding: 20px 22px; overflow: hidden; }
+  .dash-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .dash-head .sub { color: var(--muted); }
+  .deploys { list-style: none; margin: 0; padding: 0; }
+  .deploys li {
+    display: grid;
+    grid-template-columns: 128px 1fr 28px 64px;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 0;
+    box-shadow: inset 0 -1px var(--hairline);
+  }
+  .deploys .state { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+  .deploys .state origami-loader { width: 24px; height: 24px; margin: -4px -2px -4px -6px; --ol-stroke: 1px; }
+  .deploys .commit { min-width: 0; }
+  .deploys .commit span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .deploys .commit .meta { color: var(--muted); font-size: 11.5px; }
+  .deploys time { color: var(--muted); text-align: end; font-variant-numeric: tabular-nums; }
+  .deploys .current { background: linear-gradient(var(--hover), var(--hover)) no-repeat; background-size: 100% 100%; margin: 0 -22px; padding: 11px 22px; }
+  @media (max-width: 600px) {
+    .chat-window { height: 420px; }
+    .composer input { font-size: 16px; }
+  }
+  @media (max-width: 520px) {
+    .deploys li { grid-template-columns: 104px 1fr 52px; }
+    .deploys .avatar { display: none; }
+    .tab { width: 160px; }
+    .site-nav nav span:nth-child(n+3) { display: none; }
+  }
 
   /* Code */
   .code {
@@ -427,64 +637,186 @@
 
   <section>
     <h2>Examples</h2>
-    <ul class="examples">
-      <li class="example">
-        <div class="frame browser">
-          <div class="bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
-          <span class="address" aria-hidden="true">paper.studio</span>
-          <div class="viewport"><origami-loader model="crane" data-start="5" aria-label="Loading paper.studio"></origami-loader></div>
-        </div>
-        <span class="title">Page load</span>
-        <span class="description">Hold the first screen while a site loads.</span>
-      </li>
-      <li class="example">
-        <div class="frame send">
-          <origami-loader model="plane" id="send-loader" progress="0" aria-label="Sending Spring catalogue.pdf"></origami-loader>
-          <div class="file">
-            <div><span>Spring catalogue.pdf</span><span class="meta" id="send-meta">4.2 MB</span></div>
-            <button class="toggle" type="button" id="send-button" aria-pressed="false">Send</button>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-left" viewBox="0 0 16 16"><path d="M10 3.5 5.5 8l4.5 4.5"/></symbol>
+        <symbol id="i-right" viewBox="0 0 16 16"><path d="M6 3.5 10.5 8 6 12.5"/></symbol>
+        <symbol id="i-reload" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.6-3.7"/><path d="M13 2.8v2.8h-2.8"/></symbol>
+        <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7"/></symbol>
+        <symbol id="i-close" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7m0-7-7 7"/></symbol>
+        <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 12.5v-9M4.5 7 8 3.5 11.5 7"/></symbol>
+        <symbol id="i-clip" viewBox="0 0 16 16"><path d="M13 7.5 8 12.5a3 3 0 0 1-4.2-4.2l5.3-5.3a2 2 0 0 1 2.8 2.8L6.6 11a1 1 0 0 1-1.4-1.4l4.6-4.6"/></symbol>
+        <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></symbol>
+        <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7"/></symbol>
+      </defs>
+    </svg>
+    <ul class="examples wide">
+
+      <li class="example span-2">
+        <div class="mock window browser is-loading" id="ex-browser">
+          <div class="tabs">
+            <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+            <div class="tab">
+              <span class="favicon"><origami-loader model="crane" texture="none" data-start="3" aria-hidden="true"></origami-loader><span class="mark" hidden>P</span></span>
+              <span class="tab-title">Paper Studio</span>
+              <svg class="icon"><use href="#i-close"/></svg>
+            </div>
+          </div>
+          <div class="toolbar">
+            <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-left"/></svg></span>
+            <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-right"/></svg></span>
+            <button class="icon-button" type="button" id="browser-reload" aria-label="Reload the page"><svg class="icon"><use href="#i-reload"/></svg></button>
+            <div class="address"><svg class="icon small"><use href="#i-lock"/></svg><span><b>paper.studio</b>/shop</span></div>
+          </div>
+          <div class="site">
+            <div class="site-nav"><span class="logo">Paper Studio</span><nav><span>Shop</span><span>Workshops</span><span>Journal</span><span>About</span></nav></div>
+            <div class="site-body">
+              <div class="site-loading"><origami-loader model="crane" data-start="6" aria-label="Loading paper.studio"></origami-loader></div>
+              <div class="site-content">
+                <div><p class="site-hero">Objects folded from a single sheet.</p><p class="muted">Made by hand in our Lisbon studio. Ships in a flat envelope.</p></div>
+                <div class="products">
+                  <div class="product"><div class="photo"><origami-loader model="crane" look="paper" progress="1" style="--ol-front: oklch(0.64 0.16 33)" aria-hidden="true"></origami-loader></div><div class="row"><span>Crane mobile</span><span class="muted tabular">€48</span></div></div>
+                  <div class="product"><div class="photo"><origami-loader model="plane" look="paper" progress="1" style="--ol-front: oklch(0.72 0.1 85)" aria-hidden="true"></origami-loader></div><div class="row"><span>Desk dart</span><span class="muted tabular">€18</span></div></div>
+                  <div class="product"><div class="photo"><origami-loader model="crane" look="paper" progress="0.615" style="--ol-front: oklch(0.6 0.06 160)" aria-hidden="true"></origami-loader></div><div class="row"><span>Bird base print</span><span class="muted tabular">€32</span></div></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <span class="title">Sending a file</span>
-        <span class="description">Progress drives the fold. The plane leaves when the file is sent.</span>
+        <span class="title">Page load</span>
+        <span class="description">A small crane holds the page while it loads, and folds in the tab too. Reload to see it again.</span>
       </li>
+
       <li class="example">
-        <div class="frame chat">
-          <p class="you">Can you summarise this contract in three lines?</p>
-          <p class="reply"><origami-loader model="crane" data-start="15.5" aria-label="Writing a reply"></origami-loader>Thinking</p>
-        </div>
-        <span class="title">Waiting for a reply</span>
-        <span class="description">Fill the pause before an answer arrives.</span>
-      </li>
-      <li class="example">
-        <div class="frame centered">
-          <div class="phone launch"><origami-loader model="crane" look="paper" data-start="11" aria-label="Opening Fold"></origami-loader><span class="app">Fold</span></div>
+        <div class="stage-box">
+          <div class="mock phone" aria-hidden="true">
+            <div class="screen launch-screen">
+              <div class="island"></div>
+              <div class="status"><span class="tabular">9:41</span><span class="icons">
+                <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+                <svg width="15" height="11" viewBox="0 0 15 11"><path d="M7.5 2.2c2.2 0 4.2.9 5.7 2.3l1.1-1.1A9.6 9.6 0 0 0 7.5.6 9.6 9.6 0 0 0 .7 3.4l1.1 1.1a8 8 0 0 1 5.7-2.3Zm0 3.2c1.3 0 2.5.5 3.4 1.4l1.1-1.1a6.3 6.3 0 0 0-9 0l1.1 1.1c.9-.9 2.1-1.4 3.4-1.4Zm0 3.2a1.6 1.6 0 0 0-1.1.5L7.5 10.2l1.1-1.1a1.6 1.6 0 0 0-1.1-.5Z"/></svg>
+                <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="16" height="8" rx="2"/><path d="M23 4v4c.8-.3 1.3-1.1 1.3-2S23.8 4.3 23 4Z" opacity="0.4"/></svg>
+              </span></div>
+              <div class="splash">
+                <origami-loader model="crane" look="paper" data-start="12" style="--ol-front: oklch(0.64 0.16 33)"></origami-loader>
+                <span class="wordmark">Fold</span>
+                <span class="tagline">Origami, one step at a time</span>
+              </div>
+              <div class="home-bar"></div>
+            </div>
+          </div>
         </div>
         <span class="title">App launch</span>
-        <span class="description">A splash screen while the app starts.</span>
+        <span class="description">The splash screen is the first fold of the day.</span>
       </li>
+
       <li class="example">
-        <div class="frame centered">
-          <div class="phone pull" id="pull" tabindex="0" role="button" aria-label="Refresh the list. Drag down, or press Enter.">
-            <origami-loader model="crane" id="pull-loader" progress="0" aria-hidden="true"></origami-loader>
-            <ul class="rows" id="pull-rows" aria-hidden="true">
-              <li><i></i><i></i></li><li><i></i><i></i></li><li><i></i><i></i></li><li><i></i><i></i></li><li><i></i><i></i></li>
-            </ul>
+        <div class="stage-box">
+          <div class="mock phone">
+            <div class="screen mail" id="mail" tabindex="0" role="button" aria-label="Mail inbox. Drag down, or press Enter, to check for new mail.">
+              <div class="island"></div>
+              <div class="status" aria-hidden="true"><span class="tabular">9:41</span><span class="icons">
+                <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+                <svg width="15" height="11" viewBox="0 0 15 11"><path d="M7.5 2.2c2.2 0 4.2.9 5.7 2.3l1.1-1.1A9.6 9.6 0 0 0 7.5.6 9.6 9.6 0 0 0 .7 3.4l1.1 1.1a8 8 0 0 1 5.7-2.3Zm0 3.2c1.3 0 2.5.5 3.4 1.4l1.1-1.1a6.3 6.3 0 0 0-9 0l1.1 1.1c.9-.9 2.1-1.4 3.4-1.4Zm0 3.2a1.6 1.6 0 0 0-1.1.5L7.5 10.2l1.1-1.1a1.6 1.6 0 0 0-1.1-.5Z"/></svg>
+                <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="16" height="8" rx="2"/><path d="M23 4v4c.8-.3 1.3-1.1 1.3-2S23.8 4.3 23 4Z" opacity="0.4"/></svg>
+              </span></div>
+              <div class="mail-nav" aria-hidden="true"><span><svg class="icon"><use href="#i-left"/></svg>Mailboxes</span><span>Edit</span></div>
+              <origami-loader class="mail-loader" id="mail-loader" model="crane" progress="0" aria-hidden="true"></origami-loader>
+              <div class="mail-scroll" id="mail-scroll" aria-hidden="true">
+                <h3 class="mail-title">Inbox</h3>
+                <div class="search"><svg class="icon small"><use href="#i-search"/></svg>Search</div>
+                <ul class="mail-list" id="mail-list">
+                  <li><div class="item"><span></span><div><div class="top"><b>Maya Chen</b><time>9:24</time></div><div class="subject">Spring catalogue</div><div class="preview">Here's the final PDF with the new paper samples. The kraft one prints better than I expected.</div></div></div></li>
+                  <li><div class="item"><span></span><div><div class="top"><b>Studio Kami</b><time>8:51</time></div><div class="subject">Your order has shipped</div><div class="preview">200 sheets of 15 cm kami are on their way. Tracking number inside.</div></div></div></li>
+                  <li><div class="item"><span></span><div><div class="top"><b>Hiro Tanaka</b><time>Yesterday</time></div><div class="subject">Crane workshop</div><div class="preview">Saturday works for me. I'll bring the washi and a bone folder for everyone.</div></div></div></li>
+                  <li><div class="item"><span></span><div><div class="top"><b>Ana Ruiz</b><time>Yesterday</time></div><div class="subject">Re: Lamp prototype</div><div class="preview">The folds hold up under heat. Next is a thicker sheet for the shade.</div></div></div></li>
+                  <li><div class="item"><span></span><div><div class="top"><b>Paper Weekly</b><time>Mon</time></div><div class="subject">Issue 42: curved creases</div><div class="preview">This week, how a single curved fold makes a sheet stand up on its own.</div></div></div></li>
+                </ul>
+              </div>
+              <div class="home-bar"></div>
+            </div>
           </div>
         </div>
         <span class="title">Pull to refresh</span>
-        <span class="description">Drag the list down. The paper folds as you pull.</span>
+        <span class="description">Drag the inbox down. The paper folds as you pull, and new mail arrives when you let go.</span>
       </li>
+
+      <li class="example span-2">
+        <div class="mock window chat-window" id="ex-chat">
+          <div class="chrome"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">Assistant</span></div>
+          <div class="thread" id="thread" aria-live="polite">
+            <div class="attachment"><span class="doc">PDF</span><span><span style="display:block">Lease agreement.pdf</span><span class="muted">12 pages</span></span></div>
+            <div class="msg user">Can you summarise this contract in three lines?</div>
+          </div>
+          <form class="composer" id="composer">
+            <svg class="icon" style="color:var(--muted)" aria-hidden="true"><use href="#i-clip"/></svg>
+            <input id="chat-input" type="text" placeholder="Ask a follow-up" autocomplete="off" aria-label="Message the assistant">
+            <button class="send-round" type="submit" aria-label="Send message"><svg class="icon"><use href="#i-up"/></svg></button>
+          </form>
+        </div>
+        <span class="title">Waiting for a reply</span>
+        <span class="description">A tiny crane while the answer is on its way. Ask a follow-up to see it again.</span>
+      </li>
+
       <li class="example">
-        <div class="frame deploy">
-          <div class="repo"><span>acme/web</span> <span class="meta">main</span></div>
-          <ol class="stages" id="stages"><li>Install</li><li>Build</li><li>Upload</li><li>Live</li></ol>
-          <origami-loader model="crane" id="deploy-loader" progress="0" aria-label="Deploying acme/web"></origami-loader>
-          <div class="actions"><button class="toggle" type="button" id="deploy-button" aria-pressed="false">Deploy</button><span class="meta" id="deploy-meta"></span></div>
+        <div class="mock window transfer-window" id="ex-transfer">
+          <div class="chrome"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">Send files</span></div>
+          <div class="panes">
+            <div class="pane compose" id="tx-compose" data-active>
+              <div class="file-row"><span class="doc">PDF</span><span><span style="display:block">Spring catalogue.pdf</span><span class="muted tabular">4.2 MB</span></span></div>
+              <label class="field">To<input type="email" value="maya@studio.co" tabindex="-1" readonly></label>
+              <label class="field">Message<input type="text" value="Final version, with the new samples." tabindex="-1" readonly></label>
+              <div class="actions"><button class="primary" type="button" id="tx-send">Send</button></div>
+            </div>
+            <div class="pane sending" id="tx-sending">
+              <origami-loader model="plane" id="tx-loader" progress="0" aria-label="Sending Spring catalogue.pdf"></origami-loader>
+              <span>Sending to maya@studio.co</span>
+              <span class="muted tabular" id="tx-progress">0% · 0.0 of 4.2 MB</span>
+              <button class="text-button" type="button" id="tx-cancel">Cancel</button>
+            </div>
+            <div class="pane sent" id="tx-sent">
+              <span class="check"><svg class="icon"><use href="#i-check"/></svg></span>
+              <span>Sent</span>
+              <span class="muted">Maya will get a link to download it.</span>
+              <button class="text-button" type="button" id="tx-again">Send another</button>
+            </div>
+          </div>
+        </div>
+        <span class="title">Sending a file</span>
+        <span class="description">The plane folds with the upload and leaves when the file is sent.</span>
+      </li>
+
+      <li class="example span-2">
+        <div class="mock window dash" id="ex-deploy">
+          <div class="tabs">
+            <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+            <div class="tab"><span class="favicon"><span class="mark">A</span></span><span class="tab-title">Deployments · acme/web</span><svg class="icon"><use href="#i-close"/></svg></div>
+          </div>
+          <div class="toolbar">
+            <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-left"/></svg></span>
+            <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-right"/></svg></span>
+            <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-reload"/></svg></span>
+            <div class="address"><svg class="icon small"><use href="#i-lock"/></svg><span><b>deploy.acme.dev</b>/acme/web</span></div>
+          </div>
+          <div class="dash-body">
+            <div class="dash-head"><div><div>acme/web</div><div class="sub">Production deployments</div></div><button class="primary" type="button" id="redeploy">Redeploy</button></div>
+            <ul class="deploys">
+              <li class="current">
+                <span class="state"><origami-loader model="crane" id="deploy-loader" progress="0" aria-label="Deployment in progress"></origami-loader><i class="dot ok" id="deploy-dot" hidden></i><span id="deploy-state">Queued</span></span>
+                <span class="commit"><span>Fix checkout copy</span><span class="meta">main · 4f2c1ab</span></span>
+                <span class="avatar">RA</span>
+                <time id="deploy-time">0:00</time>
+              </li>
+              <li><span class="state"><i class="dot ok"></i>Ready</span><span class="commit"><span>Update pricing page</span><span class="meta">main · 9b1e0d2</span></span><span class="avatar">MC</span><time>2h ago</time></li>
+              <li><span class="state"><i class="dot ok"></i>Ready</span><span class="commit"><span>Add the paper crane loader</span><span class="meta">main · 1a7c3e9</span></span><span class="avatar">RA</span><time>Yesterday</time></li>
+              <li><span class="state"><i class="dot err"></i>Error</span><span class="commit"><span>Try a new image CDN</span><span class="meta">exp/cdn · 77de012</span></span><span class="avatar">HT</span><time>2d ago</time></li>
+            </ul>
+          </div>
         </div>
         <span class="title">Deploy</span>
-        <span class="description">Build stages map to folds, so progress means something.</span>
+        <span class="description">Each build stage is a span of the fold, so the crane is a real progress bar. It flies off when the site is live.</span>
       </li>
+
     </ul>
   </section>
 
@@ -628,132 +960,230 @@
 
 
   // ---- Examples --------------------------------------------------------
-  // Start the looping examples at different moments so they don't fold in lockstep.
-  document.querySelectorAll('[data-start]').forEach(function (l) { l.seek(parseFloat(l.getAttribute('data-start'))); });
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Simulated work: progress over `seconds`, a little uneven, like a network.
+  // Looping loaders start at different moments so they don't fold in lockstep.
+  document.querySelectorAll('[data-start]').forEach(function (l) { l.seek(parseFloat(l.getAttribute('data-start'))); });
+
+  // Run once, the first time an example is mostly on screen.
+  function onceVisible(el, fn) {
+    if (!('IntersectionObserver' in window)) return fn();
+    var io = new IntersectionObserver(function (entries) {
+      if (entries.some(function (e) { return e.isIntersecting; })) { io.disconnect(); fn(); }
+    }, { threshold: 0.5 });
+    io.observe(el);
+  }
+
+  // Simulated work: progress over `seconds`, a little uneven, like a network. Returns a cancel function.
   function run(seconds, onProgress, onDone) {
-    var start = performance.now();
-    var stalls = [0.18 + Math.random() * 0.1, 0.55 + Math.random() * 0.15];
+    var start = performance.now(), cancelled = false;
+    var stalls = [0.2 + Math.random() * 0.1, 0.58 + Math.random() * 0.12];
     function frame(now) {
+      if (cancelled) return;
       var t = Math.min(1, (now - start) / (seconds * 1000));
       var p = t;
-      stalls.forEach(function (s) { if (t > s && t < s + 0.08) p = s; else if (t >= s + 0.08) p = t - 0.08 * (t - s) / (1 - s); });
-      p = Math.min(1, Math.max(0, p));
+      stalls.forEach(function (s) { if (t > s && t < s + 0.07) p = Math.min(p, s); });
       if (reduce) p = Math.floor(p * 4) / 4;
       onProgress(p);
       if (t < 1) requestAnimationFrame(frame); else onDone();
     }
     requestAnimationFrame(frame);
+    return function () { cancelled = true; };
   }
 
-  // Sending a file
-  var sendLoader = document.getElementById('send-loader');
-  var sendButton = document.getElementById('send-button');
-  var sendMeta = document.getElementById('send-meta');
-  var sending = false;
-  sendButton.addEventListener('click', function () {
-    if (sending) return;
-    sending = true;
-    sendButton.disabled = true;
-    sendButton.setAttribute('aria-pressed', 'true');
-    sendLoader.setAttribute('progress', '0');
-    run(5, function (p) {
-      sendLoader.setAttribute('progress', p.toFixed(3));
-      sendMeta.textContent = 'Sending ' + Math.round(p * 100) + '%';
-    }, function () {
-      sendMeta.textContent = 'Sending 100%';
-      sendLoader.complete();
-    });
-  });
-  sendLoader.addEventListener('ol-complete', function () {
-    sendMeta.textContent = 'Sent';
-    sendButton.textContent = 'Send again';
-    sendButton.disabled = false;
-    sendButton.setAttribute('aria-pressed', 'false');
-    sending = false;
-  });
+  // Page load: the page shell is up, the content is on its way.
+  var browser = document.getElementById('ex-browser');
+  var favLoader = browser.querySelector('.favicon origami-loader');
+  var favMark = browser.querySelector('.favicon .mark');
+  var pageLoader = browser.querySelector('.site-loading origami-loader');
+  var loadTimer;
+  function loadPage() {
+    clearTimeout(loadTimer);
+    browser.classList.add('is-loading');
+    favLoader.hidden = false; favMark.hidden = true;
+    favLoader.removeAttribute('paused'); pageLoader.removeAttribute('paused');
+    loadTimer = setTimeout(function () {
+      browser.classList.remove('is-loading');
+      favLoader.hidden = true; favMark.hidden = false;
+      favLoader.setAttribute('paused', ''); pageLoader.setAttribute('paused', '');
+    }, 4200);
+  }
+  onceVisible(browser, loadPage);
+  document.getElementById('browser-reload').addEventListener('click', loadPage);
 
   // Pull to refresh: the fold follows the finger, 1:1.
-  var pull = document.getElementById('pull');
-  var rows = document.getElementById('pull-rows');
-  var pullLoader = document.getElementById('pull-loader');
+  var mail = document.getElementById('mail');
+  var mailScroll = document.getElementById('mail-scroll');
+  var mailList = document.getElementById('mail-list');
+  var mailLoader = document.getElementById('mail-loader');
+  var incoming = [
+    ['Maya Chen', 'now', 'Re: Spring catalogue', "Thanks! I'll print a proof this afternoon and bring it Saturday."],
+    ['Studio Kami', 'now', 'Back in stock', 'Washi in 24 colours is back, in 15 and 24 cm sheets.'],
+    ['Hiro Tanaka', 'now', 'Photos from the workshop', 'Forty cranes on one string. Everyone kept theirs.'],
+  ];
   var startY = null, pulled = 0, refreshing = false;
-  var THRESHOLD = 84, MAX_FOLD = 0.08;
+  var THRESHOLD = 70, FOLD = 0.06;
   function setPull(d) {
     pulled = Math.max(0, d);
-    var shown = Math.min(pulled, 110) - Math.max(0, pulled - 110) * 0.6;
-    rows.style.transform = 'translateY(' + Math.max(0, shown) + 'px)';
-    pullLoader.style.opacity = String(Math.min(1, pulled / 40));
-    pullLoader.setAttribute('progress', (Math.min(1, pulled / THRESHOLD) * MAX_FOLD).toFixed(3));
+    var shown = pulled < 90 ? pulled : 90 + (pulled - 90) * 0.3;
+    mailScroll.style.transform = 'translateY(' + shown + 'px)';
+    mailLoader.style.opacity = String(Math.min(1, pulled / 36));
+    mailLoader.setAttribute('progress', (Math.min(1, pulled / THRESHOLD) * FOLD).toFixed(3));
+  }
+  function arrive() {
+    var m = incoming.shift();
+    if (!m) return;
+    incoming.push(m);
+    var li = document.createElement('li');
+    li.className = 'arriving';
+    li.innerHTML = '<div class="item"><i class="dot new"></i><div><div class="top"><b></b><time></time></div><div class="subject"></div><div class="preview"></div></div></div>';
+    li.querySelector('b').textContent = m[0];
+    li.querySelector('time').textContent = m[1];
+    li.querySelector('.subject').textContent = m[2];
+    li.querySelector('.preview').textContent = m[3];
+    mailList.prepend(li);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { li.classList.remove('arriving'); }); });
+    while (mailList.children.length > 6) mailList.lastElementChild.remove();
   }
   function refresh() {
     if (refreshing) return;
     refreshing = true;
-    rows.classList.remove('held');
-    rows.style.transform = 'translateY(84px)';
-    pullLoader.style.opacity = '1';
-    var from = parseFloat(pullLoader.getAttribute('progress')) || 0;
-    run(1.6, function (p) { pullLoader.setAttribute('progress', (from + (0.2 - from) * p).toFixed(3)); }, function () {
-      rows.style.transform = '';
-      pullLoader.style.opacity = '0';
-      setTimeout(function () { pullLoader.setAttribute('progress', '0'); refreshing = false; }, 300);
+    mailScroll.classList.remove('held');
+    mailScroll.style.transform = 'translateY(64px)';
+    mailLoader.style.opacity = '1';
+    var from = parseFloat(mailLoader.getAttribute('progress')) || 0;
+    run(1.5, function (p) { mailLoader.setAttribute('progress', (from + (0.16 - from) * p).toFixed(3)); }, function () {
+      mailScroll.style.transform = '';
+      mailLoader.style.opacity = '0';
+      arrive();
+      setTimeout(function () { mailLoader.setAttribute('progress', '0'); refreshing = false; }, 320);
     });
   }
-  pull.addEventListener('pointerdown', function (e) {
+  mail.addEventListener('pointerdown', function (e) {
     if (refreshing) return;
     startY = e.clientY;
-    rows.classList.add('held');
-    pull.setPointerCapture(e.pointerId);
+    mailScroll.classList.add('held');
+    mail.setPointerCapture(e.pointerId);
   });
-  pull.addEventListener('pointermove', function (e) { if (startY !== null) setPull(e.clientY - startY); });
+  mail.addEventListener('pointermove', function (e) { if (startY !== null) setPull(e.clientY - startY); });
   function release() {
     if (startY === null) return;
     startY = null;
     if (pulled >= THRESHOLD) refresh();
-    else { rows.classList.remove('held'); setPull(0); rows.style.transform = ''; }
+    else { mailScroll.classList.remove('held'); setPull(0); mailScroll.style.transform = ''; }
   }
-  pull.addEventListener('pointerup', release);
-  pull.addEventListener('pointercancel', release);
-  pull.addEventListener('keydown', function (e) {
+  mail.addEventListener('pointerup', release);
+  mail.addEventListener('pointercancel', release);
+  mail.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPull(THRESHOLD); refresh(); }
   });
 
-  // Deploy: four stages, each a span of the fold.
-  var deployLoader = document.getElementById('deploy-loader');
-  var deployButton = document.getElementById('deploy-button');
-  var deployMeta = document.getElementById('deploy-meta');
-  var stages = Array.prototype.slice.call(document.querySelectorAll('#stages li'));
-  var bounds = [0.22, 0.62, 0.92, 1];
-  var deploying = false;
-  function markStage(p, finished) {
-    stages.forEach(function (li, i) {
-      var done = finished ? i < 3 : p >= bounds[i];
-      var current = finished ? i === 3 : !done && (i === 0 || p >= bounds[i - 1]);
-      li.classList.toggle('done', done && i < 3);
-      if (current) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
-    });
+  // Waiting for a reply.
+  var thread = document.getElementById('thread');
+  var composer = document.getElementById('composer');
+  var chatInput = document.getElementById('chat-input');
+  var answers = [
+    "Here's the short version:\n1. A two-year lease from 1 March, at €1,450 a month.\n2. Either side can end it with 60 days' notice.\n3. Repairs under €200 are yours; anything bigger is the landlord's.",
+    "Yes. Clause 9 lets you sublet with written consent, and they can't refuse without a reason.",
+    "The deposit is two months' rent. It comes back within 30 days of moving out, minus any damage.",
+  ];
+  var answered = 0, busy = false;
+  function scrollThread() { thread.scrollTop = thread.scrollHeight; }
+  function think(label, then) {
+    busy = true;
+    var row = document.createElement('div');
+    row.className = 'thinking';
+    var loader = document.createElement('origami-loader');
+    loader.setAttribute('model', 'crane');
+    loader.setAttribute('aria-label', 'Writing a reply');
+    row.appendChild(loader);
+    row.appendChild(document.createTextNode(label));
+    thread.appendChild(row);
+    loader.seek(1 + Math.random() * 18);
+    scrollThread();
+    setTimeout(function () { row.remove(); then(); }, 3200);
   }
-  deployButton.addEventListener('click', function () {
-    if (deploying) return;
-    deploying = true;
-    deployButton.disabled = true;
-    deployButton.setAttribute('aria-pressed', 'true');
-    deployMeta.textContent = '';
+  function stream(text) {
+    var msg = document.createElement('div');
+    msg.className = 'msg ai';
+    thread.appendChild(msg);
+    var parts = text.split(/(\s+)/), i = 0;
+    if (reduce) { msg.textContent = text; scrollThread(); busy = false; return; }
+    (function next() {
+      msg.textContent += parts.slice(i, i + 2).join('');
+      i += 2;
+      scrollThread();
+      if (i < parts.length) setTimeout(next, 32); else busy = false;
+    })();
+  }
+  onceVisible(document.getElementById('ex-chat'), function () {
+    think('Reading Lease agreement.pdf', function () { stream(answers[answered++ % answers.length]); });
+  });
+  composer.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var text = chatInput.value.trim() || (answered === 1 ? 'Can I sublet the flat?' : 'What about the deposit?');
+    if (busy) return;
+    var user = document.createElement('div');
+    user.className = 'msg user';
+    user.textContent = text;
+    thread.appendChild(user);
+    chatInput.value = '';
+    scrollThread();
+    think('Thinking', function () { stream(answers[answered++ % answers.length]); });
+  });
+
+  // Sending a file.
+  var tx = { compose: document.getElementById('tx-compose'), sending: document.getElementById('tx-sending'), sent: document.getElementById('tx-sent') };
+  var txLoader = document.getElementById('tx-loader');
+  var txProgress = document.getElementById('tx-progress');
+  var cancelSend = null;
+  function showPane(name) { Object.keys(tx).forEach(function (k) { tx[k].toggleAttribute('data-active', k === name); }); }
+  document.getElementById('tx-send').addEventListener('click', function () {
+    txLoader.setAttribute('progress', '0');
+    txProgress.textContent = '0% · 0.0 of 4.2 MB';
+    showPane('sending');
+    cancelSend = run(5.5, function (p) {
+      txLoader.setAttribute('progress', p.toFixed(3));
+      txProgress.textContent = Math.round(p * 100) + '% · ' + (p * 4.2).toFixed(1) + ' of 4.2 MB';
+    }, function () { cancelSend = null; txLoader.complete(); });
+  });
+  txLoader.addEventListener('ol-complete', function () { showPane('sent'); });
+  document.getElementById('tx-cancel').addEventListener('click', function () {
+    if (cancelSend) cancelSend();
+    cancelSend = null;
+    showPane('compose');
+  });
+  document.getElementById('tx-again').addEventListener('click', function () { showPane('compose'); });
+
+  // Deploy: build stages are spans of the fold.
+  var deployLoader = document.getElementById('deploy-loader');
+  var deployState = document.getElementById('deploy-state');
+  var deployDot = document.getElementById('deploy-dot');
+  var deployTime = document.getElementById('deploy-time');
+  var redeploy = document.getElementById('redeploy');
+  var stages = [[0.06, 'Queued'], [0.3, 'Installing'], [0.72, 'Building'], [1, 'Uploading']];
+  var BUILD_SECONDS = 41;
+  function clock(s) { s = Math.round(s); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  function deploy() {
+    redeploy.disabled = true;
+    deployDot.hidden = true;
+    deployLoader.hidden = false;
+    deployLoader.setAttribute('progress', '0');
     run(8, function (p) {
       deployLoader.setAttribute('progress', p.toFixed(3));
-      markStage(p, false);
+      for (var i = 0; i < stages.length; i++) if (p <= stages[i][0]) { deployState.textContent = stages[i][1]; break; }
+      deployTime.textContent = clock(p * BUILD_SECONDS);
     }, function () { deployLoader.complete(); });
-  });
+  }
   deployLoader.addEventListener('ol-complete', function () {
-    markStage(1, true);
-    deployMeta.textContent = 'acme-web.app';
-    deployButton.textContent = 'Deploy again';
-    deployButton.disabled = false;
-    deployButton.setAttribute('aria-pressed', 'false');
-    deploying = false;
+    deployLoader.hidden = true;
+    deployDot.hidden = false;
+    deployState.textContent = 'Ready';
+    deployTime.textContent = clock(BUILD_SECONDS);
+    redeploy.disabled = false;
   });
+  onceVisible(document.getElementById('ex-deploy'), deploy);
+  redeploy.addEventListener('click', deploy);
 
   syncPlay();
   showStep(hero.currentStep);
