@@ -98,7 +98,7 @@ el.restart(); // or set progress again to fold a fresh sheet
 | `frog` | The traditional jumping frog, from a waterbomb base. Its pleat is a spring: it hops twice, then hops away. |
 | `swan` | Kite, neck, head. Drifts on the water, then glides off. |
 | `heart` | The classic heart, folded on the side you see. It beats. |
-| `whale` | A kite with its tail lifted. Swims, flicks its tail, dives. |
+| `whale` | The traditional whale, from a fish base: the rabbit ears become its flippers. Swims, flicks its tail, then dives. |
 | `fox` | A fox's face. Tilts its head and twitches its ears. |
 
 Pick one with the `model` attribute:
