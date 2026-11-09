@@ -109,6 +109,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    overflow-x: clip;
   }
   ::selection { background: oklch(0.245 0.008 95 / 0.12); }
   :root[data-theme="dark"] ::selection { background: oklch(1 0 0 / 0.16); }
@@ -289,14 +290,28 @@
 
 
   /* Examples: real-looking apps, in the page's own materials. -------------- */
-  .wide {
-    width: min(1040px, calc(100vw - 48px));
-    position: relative;
-    left: 50%;
-    translate: -50% 0;
+  /* Examples swipe sideways, the way Apple shows highlights: full-bleed, snapping, the next card peeking in. */
+  .carousel { --gutter: max(24px, calc((100vw - var(--column)) / 2)); position: relative; width: 100vw; left: 50%; translate: -50% 0; }
+  .examples {
+    list-style: none; margin: 0;
+    display: flex; gap: 20px;
+    padding: 2px var(--gutter) 6px;
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
   }
-  .examples { list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 880px) { .examples { grid-template-columns: 1fr; } }
+  .examples::-webkit-scrollbar { display: none; }
+  .examples > .card { flex: none; width: min(510px, calc(100vw - 2 * var(--gutter) - 40px)); scroll-snap-align: start; }
+  .carousel-nav { display: flex; justify-content: flex-end; gap: 10px; padding: 16px var(--gutter) 0; }
+  .round { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--code-bg); color: var(--text); transition: background-color 150ms ease-out, opacity 150ms ease-out, scale 150ms ease-out; }
+  .round:active { scale: 0.94; }
+  .round:disabled { opacity: 0.35; cursor: default; scale: 1; }
+  @media (hover: hover) and (pointer: fine) { .round:not(:disabled):hover { background: var(--hover); } }
+  @media (max-width: 600px) {
+    .carousel { --gutter: 16px; }
+    .examples { gap: 12px; }
+    .examples > .card { width: calc(100vw - 56px); }
+  }
 
   /* Cards: a sentence on top, the app below, zoomed in and cropped by the card. */
   .card {
@@ -352,7 +367,7 @@
   /* Where each app sits in its card. */
   #v-browser > .mock { left: 32px; top: 6px; width: 620px; }
   #v-launch > .device { left: 50%; top: 4px; translate: -50% 0; scale: 1.18; transform-origin: 50% 0; }
-  #v-mail > .device { left: 50%; top: 4px; translate: -50% 0; scale: 1.18; transform-origin: 50% 0; }
+  #v-mail > .device { left: 50%; top: 4px; translate: -50% 0; scale: 0.88; transform-origin: 50% 0; }
   #v-chat > .mock { left: 14px; top: 0; scale: 0.88; }
   #v-send > .mock { left: 50%; top: 6px; translate: -50% 0; width: 400px; }
   #v-deploy > .mock { left: 18px; top: 6px; scale: 0.88; }
@@ -368,7 +383,8 @@
     #v-feed > .device { scale: 0.74; }
     #v-still > .device { scale: 1.05; }
     #v-chat > .mock { left: 12px; top: 4px; scale: 0.74; }
-    #v-launch > .device, #v-mail > .device { scale: 1.05; }
+    #v-launch > .device { scale: 1.05; }
+    #v-mail > .device { scale: 0.74; }
     #v-send > .mock { width: 360px; scale: 0.9; transform-origin: 50% 0; }
   }
 
@@ -636,19 +652,27 @@
   .mail-loader { position: absolute; left: 0; right: 0; top: 74px; margin: auto; width: 30px; height: 30px; opacity: 0; transition: opacity 150ms ease-out; }
   .mail-scroll { position: relative; background: var(--win-bg); transition: transform 320ms cubic-bezier(0.23, 1, 0.32, 1); }
   .mail-scroll.held { transition: none; }
-  .mail-title { margin: 6px 16px 8px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
-  .search { margin: 0 16px 6px; height: 30px; border-radius: 9px; background: var(--code-bg); color: var(--muted); display: flex; align-items: center; gap: 6px; padding: 0 9px; }
+  .mail-title { margin: 4px 16px 8px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+  .search { margin: 0 16px 8px; height: 28px; border-radius: 9px; background: var(--code-bg); color: var(--muted); display: flex; align-items: center; gap: 6px; padding: 0 9px; }
+  /* iOS Mail's categories: the selected one is labelled, the rest are icons. */
+  .mail-cats { display: flex; gap: 6px; margin: 0 16px 4px; }
+  .mail-cats span { height: 26px; min-width: 36px; padding: 0 9px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: var(--code-bg); color: var(--muted); font-size: 11px; font-weight: 600; }
+  .mail-cats .on { flex: 1; background: var(--accent); color: oklch(1 0 0); }
   .mail-list { list-style: none; margin: 0; padding: 0; }
   .mail-list li { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 280ms cubic-bezier(0.23, 1, 0.32, 1); }
   .mail-list li.arriving { grid-template-rows: 0fr; }
-  .mail-list .item { overflow: hidden; display: grid; grid-template-columns: 14px 1fr; padding: 0 16px 0 4px; }
-  .mail-list .item > .dot { margin: 15px 0 0 4px; }
-  .mail-list .item > :last-child { padding: 9px 0; box-shadow: inset 0 -1px var(--hairline); min-width: 0; }
-  .mail-list .top { display: flex; justify-content: space-between; gap: 8px; }
-  .mail-list b { font-weight: 600; }
-  .mail-list time { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-  .mail-list .subject { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .mail-list .preview { color: var(--muted); font-size: 11.5px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mail-list .item { overflow: hidden; display: grid; grid-template-columns: 8px 30px minmax(0, 1fr); column-gap: 8px; align-items: start; padding: 0 14px 0 6px; }
+  .mail-list .item > .dot { margin-top: 20px; }
+  .mail-list .item > .avatar { width: 30px; height: 30px; margin-top: 9px; font-size: 10px; }
+  .mail-list .body { padding: 8px 0 9px; box-shadow: inset 0 -0.5px var(--hairline); min-width: 0; }
+  .mail-list .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .mail-list b { font-weight: 600; font-size: 12.5px; }
+  .mail-list time { display: inline-flex; align-items: center; gap: 2px; color: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mail-list time .icon { width: 9px; height: 9px; color: var(--faint); }
+  .mail-list .subject { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mail-list .preview { color: var(--muted); font-size: 11px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mail-bar { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; height: 52px; padding: 0 16px 18px; display: flex; align-items: center; justify-content: space-between; background: var(--win-bg); box-shadow: inset 0 0.5px var(--hairline); color: var(--accent); }
+  .mail-bar span { color: var(--text); font-size: 10px; }
 
   /* Chat: an assistant web app, sidebar and all, cut off by the card. */
   .chat-page { width: 620px; height: 474px; display: grid; grid-template-columns: 52px 1fr; border-radius: 12px 0 0 12px; background: var(--win-bg); box-shadow: var(--elevation); overflow: hidden; }
@@ -992,6 +1016,11 @@
         <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></symbol>
         <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7"/></symbol>
         <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9"/></symbol>
+        <symbol id="i-user" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3.5 13.5a4.5 4.5 0 0 1 9 0"/></symbol>
+        <symbol id="i-cart" viewBox="0 0 16 16"><path d="M2.5 3h1.6l1.3 7h6.6l1.3-5H5"/><circle cx="6.5" cy="12.8" r=".9"/><circle cx="11" cy="12.8" r=".9"/></symbol>
+        <symbol id="i-chat" viewBox="0 0 16 16"><path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h7A1.5 1.5 0 0 1 13 4.5v5A1.5 1.5 0 0 1 11.5 11H7l-3 2.5V11h0a1.5 1.5 0 0 1-1-1.4Z"/></symbol>
+        <symbol id="i-tag" viewBox="0 0 16 16"><path d="M2.5 8.2V3.5a1 1 0 0 1 1-1h4.7l5.3 5.3a1 1 0 0 1 0 1.4l-4.3 4.3a1 1 0 0 1-1.4 0Z"/><circle cx="5.5" cy="5.5" r=".9"/></symbol>
+        <symbol id="i-filter" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M5.5 6.8h5M6.3 8.6h3.4M7.2 10.3h1.6"/></symbol>
         <symbol id="i-home" viewBox="0 0 16 16"><path d="M2.8 7.2 8 2.8l5.2 4.4V13a.5.5 0 0 1-.5.5H10V10H6v3.5H3.3a.5.5 0 0 1-.5-.5Z"/></symbol>
         <symbol id="i-heart" viewBox="0 0 16 16"><path d="M8 13.5S2.5 10 2.5 6.2A2.7 2.7 0 0 1 8 4.8a2.7 2.7 0 0 1 5.5 1.4C13.5 10 8 13.5 8 13.5Z"/></symbol>
         <symbol id="i-play" viewBox="0 0 16 16"><path d="M5 3.5v9l7.5-4.5Z" fill="currentColor"/></symbol>
@@ -1006,7 +1035,8 @@
         <symbol id="i-retry" viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.8v2.8h2.8"/></symbol>
       </defs>
     </svg>
-    <ul class="examples wide">
+    <div class="carousel">
+    <ul class="examples" id="examples" aria-label="Examples">
       <li class="card">
         <img class="card-bg" src="assets/bg-page.webp" alt="" width="2048" height="1152" loading="lazy" decoding="async">
         <div class="card-text">
@@ -1109,14 +1139,16 @@
                 <div class="mail-scroll" id="mail-scroll" aria-hidden="true">
                   <h3 class="mail-title">Inbox</h3>
                   <div class="search"><svg class="icon small"><use href="#i-search"/></svg>Search</div>
+                  <div class="mail-cats" aria-hidden="true"><span class="on"><svg class="icon small"><use href="#i-user"/></svg>Primary</span><span><svg class="icon small"><use href="#i-cart"/></svg></span><span><svg class="icon small"><use href="#i-chat"/></svg></span><span><svg class="icon small"><use href="#i-tag"/></svg></span></div>
                   <ul class="mail-list" id="mail-list">
-                    <li><div class="item"><span></span><div><div class="top"><b>Maya Chen</b><time>9:24</time></div><div class="subject">Spring catalogue</div><div class="preview">Here's the final PDF with the new paper samples. The kraft one prints better than I expected.</div></div></div></li>
-                    <li><div class="item"><span></span><div><div class="top"><b>Studio Kami</b><time>8:51</time></div><div class="subject">Your order has shipped</div><div class="preview">200 sheets of 15 cm kami are on their way. Tracking number inside.</div></div></div></li>
-                    <li><div class="item"><span></span><div><div class="top"><b>Hiro Tanaka</b><time>Yesterday</time></div><div class="subject">Crane workshop</div><div class="preview">Saturday works for me. I'll bring the washi and a bone folder for everyone.</div></div></div></li>
-                    <li><div class="item"><span></span><div><div class="top"><b>Ana Ruiz</b><time>Yesterday</time></div><div class="subject">Re: Lamp prototype</div><div class="preview">The folds hold up under heat. Next is a thicker sheet for the shade.</div></div></div></li>
-                    <li><div class="item"><span></span><div><div class="top"><b>Paper Weekly</b><time>Mon</time></div><div class="subject">Issue 42: curved creases</div><div class="preview">This week, how a single curved fold makes a sheet stand up on its own.</div></div></div></li>
+                    <li><div class="item"><i class="dot new"></i><span class="avatar" style="--hue: 250">MC</span><div class="body"><div class="top"><b>Maya Chen</b><time>9:24<svg class="icon small"><use href="#i-right"/></svg></time></div><div class="subject">Spring catalogue</div><div class="preview">Here's the final PDF with the new paper samples. The kraft one prints better than I expected.</div></div></div></li>
+                    <li><div class="item"><i class="dot new"></i><span class="avatar" style="--hue: 60">SK</span><div class="body"><div class="top"><b>Studio Kami</b><time>8:51<svg class="icon small"><use href="#i-right"/></svg></time></div><div class="subject">Your order has shipped</div><div class="preview">200 sheets of 15 cm kami are on their way. Tracking number inside.</div></div></div></li>
+                    <li><div class="item"><i class="dot"></i><span class="avatar" style="--hue: 150">HT</span><div class="body"><div class="top"><b>Hiro Tanaka</b><time>Yesterday<svg class="icon small"><use href="#i-right"/></svg></time></div><div class="subject">Crane workshop</div><div class="preview">Saturday works for me. I'll bring the washi and a bone folder for everyone.</div></div></div></li>
+                    <li><div class="item"><i class="dot"></i><span class="avatar" style="--hue: 25">AR</span><div class="body"><div class="top"><b>Ana Ruiz</b><time>Yesterday<svg class="icon small"><use href="#i-right"/></svg></time></div><div class="subject">Re: Lamp prototype</div><div class="preview">The folds hold up under heat. Next is a thicker sheet for the shade.</div></div></div></li>
+                    <li><div class="item"><i class="dot"></i><span class="avatar" style="--hue: 300">PW</span><div class="body"><div class="top"><b>Paper Weekly</b><time>Mon<svg class="icon small"><use href="#i-right"/></svg></time></div><div class="subject">Issue 42: curved creases</div><div class="preview">This week, how a single curved fold makes a sheet stand up on its own.</div></div></div></li>
                   </ul>
                 </div>
+                <div class="mail-bar" aria-hidden="true"><svg class="icon"><use href="#i-filter"/></svg><span id="mail-updated">Updated Just Now</span><svg class="icon"><use href="#i-edit"/></svg></div>
                 <div class="home-bar"></div>
               </div>
             </div>
@@ -1286,6 +1318,11 @@
         </div>
       </li>
     </ul>
+    <div class="carousel-nav">
+      <button class="round" type="button" id="ex-prev" aria-label="Previous example" aria-controls="examples"><svg class="icon"><use href="#i-left"/></svg></button>
+      <button class="round" type="button" id="ex-next" aria-label="Next example" aria-controls="examples"><svg class="icon"><use href="#i-right"/></svg></button>
+    </div>
+    </div>
   </section>
 
   <section>
@@ -1515,10 +1552,11 @@
   var mailList = document.getElementById('mail-list');
   var mailLoader = document.getElementById('mail-loader');
   var incoming = [
-    ['Maya Chen', 'now', 'Re: Spring catalogue', "Thanks! I'll print a proof this afternoon and bring it Saturday."],
-    ['Studio Kami', 'now', 'Back in stock', 'Washi in 24 colours is back, in 15 and 24 cm sheets.'],
-    ['Hiro Tanaka', 'now', 'Photos from the workshop', 'Forty cranes on one string. Everyone kept theirs.'],
+    ['MC', 250, 'Maya Chen', 'Re: Spring catalogue', "Thanks! I'll print a proof this afternoon and bring it Saturday."],
+    ['SK', 60, 'Studio Kami', 'Back in stock', 'Washi in 24 colours is back, in 15 and 24 cm sheets.'],
+    ['HT', 150, 'Hiro Tanaka', 'Photos from the workshop', 'Forty cranes on one string. Everyone kept theirs.'],
   ];
+  var mailUpdated = document.getElementById('mail-updated');
   var startY = null, pulled = 0, refreshing = false;
   // The pull folds the envelope's first two corners; letting go folds the rest and seals it.
   var THRESHOLD = 70, FOLD = 0.48;
@@ -1535,11 +1573,13 @@
     incoming.push(m);
     var li = document.createElement('li');
     li.className = 'arriving';
-    li.innerHTML = '<div class="item"><i class="dot new"></i><div><div class="top"><b></b><time></time></div><div class="subject"></div><div class="preview"></div></div></div>';
-    li.querySelector('b').textContent = m[0];
-    li.querySelector('time').textContent = m[1];
-    li.querySelector('.subject').textContent = m[2];
-    li.querySelector('.preview').textContent = m[3];
+    li.innerHTML = '<div class="item"><i class="dot new"></i><span class="avatar"></span><div class="body"><div class="top"><b></b><time>Now<svg class="icon small"><use href="#i-right"/></svg></time></div><div class="subject"></div><div class="preview"></div></div></div>';
+    var av = li.querySelector('.avatar');
+    av.textContent = m[0];
+    av.style.setProperty('--hue', m[1]);
+    li.querySelector('b').textContent = m[2];
+    li.querySelector('.subject').textContent = m[3];
+    li.querySelector('.preview').textContent = m[4];
     mailList.prepend(li);
     requestAnimationFrame(function () { requestAnimationFrame(function () { li.classList.remove('arriving'); }); });
     while (mailList.children.length > 6) mailList.lastElementChild.remove();
@@ -1547,6 +1587,7 @@
   function refresh() {
     if (refreshing) return;
     refreshing = true;
+    mailUpdated.textContent = 'Checking for Mail…';
     mailScroll.classList.remove('held');
     mailScroll.style.transform = 'translateY(64px)';
     mailLoader.style.opacity = '1';
@@ -1557,6 +1598,7 @@
   }
   mailLoader.addEventListener('ol-complete', function () {
     mailScroll.style.transform = '';
+    mailUpdated.textContent = 'Updated Just Now';
     arrive();
     setTimeout(function () {
       mailLoader.style.opacity = '0';
@@ -1824,6 +1866,21 @@
   swan.addEventListener('ol-complete', function () { dl.setAttribute('data-state', 'done'); });
   document.getElementById('dl-btn').addEventListener('click', download);
   onceVisible(document.getElementById('v-still'), download);
+
+  // Carousel arrows: one card at a time; greyed out at either end.
+  var track = document.getElementById('examples');
+  var prev = document.getElementById('ex-prev'), next = document.getElementById('ex-next');
+  function step() { var c = track.querySelector('.card'); return c.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || '20'); }
+  function syncArrows() {
+    var max = track.scrollWidth - track.clientWidth;
+    prev.disabled = track.scrollLeft <= 2;
+    next.disabled = track.scrollLeft >= max - 2;
+  }
+  prev.addEventListener('click', function () { track.scrollBy({ left: -step(), behavior: reduce ? 'auto' : 'smooth' }); });
+  next.addEventListener('click', function () { track.scrollBy({ left: step(), behavior: reduce ? 'auto' : 'smooth' }); });
+  track.addEventListener('scroll', syncArrows, { passive: true });
+  window.addEventListener('resize', syncArrows);
+  syncArrows();
 
   // Card footers: one clear action each.
   document.getElementById('act-reload').addEventListener('click', loadPage);
