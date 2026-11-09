@@ -33,11 +33,14 @@ const yWing = (() => {
 })();
 /** Where the legs meet the body. */
 const yLeg = 0.263;
-/** The reverse-fold crease across each leg slopes this much (radians): the neck rises at about 54°. */
-const NECK_SLOPE = (18 * Math.PI) / 180;
-/** The head: how far from the tip of the neck, and the way it points (radians from +x). */
-const HEAD = 0.19;
-const HEAD_DIR = (-28 * Math.PI) / 180;
+/**
+ * The reverse-fold crease across each leg slopes this much (radians). As on the diagram, the
+ * legs swing almost straight up beside the body: the neck and tail rise at about 72°.
+ */
+const NECK_SLOPE = (9 * Math.PI) / 180;
+/** The head: how far from the tip of the neck, and the way it hooks (radians from +x): down and forward. */
+const HEAD = 0.26;
+const HEAD_DIR = (-55 * Math.PI) / 180;
 
 /** Mirror image of p across the line a→b. */
 function mirror(p: P2, [a, b]: [P2, P2]): P2 {
