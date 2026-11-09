@@ -1,7 +1,7 @@
 import { Folder, type Face, type Filter, type StepBuilder } from '../fold';
 import { eases, type EaseName, type Pose } from '../motion';
 import { apply, rotation, type Vec3 } from '../math';
-import { side, type P2 } from '../geom';
+import type { P2 } from '../geom';
 
 /**
  * The traditional jumping frog, from a 1 : 2 rectangle.
@@ -20,12 +20,19 @@ const O: P2 = [0, 0.5];            // centre of the top square: the top point of
 const A: P2 = [-a, 1], B: P2 = [a, 1], C: P2 = [a, 0], D: P2 = [-a, 0];
 const E: P2 = [-a, 0.5], Fp: P2 = [a, 0.5];
 const H: P2 = [0, 0];
-const ML: P2 = [-0.25, 0.25], MR: P2 = [0.25, 0.25];
 /** How far the spring's folds open when the frog sits, and how much a hop squashes them (degrees). */
 const SPRING = 35;
 const SQUASH = 28;
-/** Each front leg turns out on a line from the bottom of the head toward here, so its tip points forward and out. */
-const LEG = (σ: number): P2 => [σ * 0.28, 0.5];
+/** Which way each front leg points once folded: forward (+y), 25° out to its side. */
+const LEG_OUT = 25;
+/**
+ * The leg's fold runs from the bottom of the head, H, at half the angle between where the corner
+ * is (180° on the left) and where it should point (90° + LEG_OUT): 147.5°, mirrored on the right.
+ */
+const LEG = (σ: number): P2 => {
+  const a = (((180 + 90 + LEG_OUT) / 2) * Math.PI) / 180;
+  return [-σ * Math.cos(a), Math.sin(a)];
+};
 
 /** Which part of the top square a sheet point is in: the four triangles of the X, the sides split by the horizontal. */
 type Sector = 'top' | 'bottom' | 'upL' | 'lowL' | 'upR' | 'lowR' | 'body';
@@ -118,22 +125,14 @@ export function buildFrog() {
     s.layer([...q('lowL'), ...q('lowR')], q('bottom'));
   });
 
-  // Front legs: the front flaps' lower corners come up to the top point, then their tips turn out.
+  // Front legs, as on origami.me: each front flap's corner folds up in one fold, on a line from the
+  // bottom of the head, so the leg points forward and a little out, as long as the head is tall.
   let legs: Face[] = [];
-  F.step({ diagram: 5, label: 'Fold the front corners up', duration: 0.9, pose: { s: 1.25 } }, (s) => {
+  F.step({ diagram: 5, label: 'Fold the front legs up', duration: 1.0, pose: { s: 1.25 } }, (s) => {
     legs = [
-      ...s.fold(H, ML, { where: inSector('top', 'upL'), side: D, toward: 1, at: [0, 0.7] }),
-      ...s.fold(H, MR, { where: inSector('top', 'upR'), side: C, toward: 1, at: [0.3, 1] }),
+      ...s.fold(H, LEG(-1), { where: inSector('top', 'upL'), side: D, toward: 1, at: [0, 0.7] }),
+      ...s.fold(H, LEG(1), { where: inSector('top', 'upR'), side: C, toward: 1, at: [0.3, 1] }),
     ];
-  });
-  F.step({ diagram: 6, label: 'Fold the legs out', duration: 0.9 }, (s) => {
-    const legSet = new Set(legs);
-    const leg = (σ: number): Filter => (f) => σ * f.model[0] > 0 && f.model[1] > 0;
-    const out = (σ: number) => s.select(leg(σ)).filter((f) => legSet.has(f));
-    const l = s.split(out(-1), H, LEG(-1)), r = s.split(out(1), H, LEG(1));
-    legs = [...legs.filter((f) => s.select().includes(f)), ...l, ...r];
-    s.attach(l.filter((f) => side(H, LEG(-1), s.info(f).model) < 0), s.hinge(H, LEG(-1), O, 1));
-    s.attach(r.filter((f) => side(H, LEG(1), s.info(f).model) > 0), s.hinge(H, LEG(1), O, 1));
   });
 
   // The body: sides to the centre. At the top the fold carries on through the back layers of the

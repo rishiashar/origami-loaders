@@ -24,14 +24,19 @@ const along = (deg: number, σ: number, r = 3): P2 => {
   return [σ * r * Math.sin(a), -1 + r * Math.cos(a)];
 };
 const rad = (deg: number) => (deg * Math.PI) / 180;
-/** Which way the neck ends up pointing: up (+x), leaning a little forward (−y). Degrees, model space. */
-const NECK_DIR = 348;
-/** Which way the head points: forward, a little down. */
-const HEAD_DIR = 255;
+/**
+ * Which way the neck ends up pointing, in model space before the swan tips back: up (+x),
+ * leaning back (+y) a little more than the tilt, so it stands almost upright, as on origami.me.
+ */
+const NECK_DIR = 15;
+/** Which way the head points: forward (−y), raised by about the tilt so it ends up level. */
+const HEAD_DIR = 278;
+/** The swan tips back by the angle of its open edges (the second kite fold), so they sit level on the water. */
+const TILT = 11.25;
 /** The neck's crease starts on the back this far behind its root, leaving a small triangle there. */
-const ROOT = 0.19;
-/** How much of the neck the head takes. */
-const HEAD = 0.2;
+const ROOT = 0.29;
+/** How much of the neck the head takes: on origami.me it is about as long as the neck shows. */
+const HEAD = 0.3;
 
 /** Mirror image of p across the line a→b. */
 function mirror(p: P2, [a, b]: [P2, P2]): P2 {
@@ -94,7 +99,8 @@ export function buildSwan() {
   /** The neck's own fold, along the back: it opens and closes about this as it turns inside out. */
   const neckAxis: [P2, P2] = [[0, ROOT], [0, 1]];
   let neck: Face[] = [];
-  F.step({ diagram: 7, label: 'Pull the neck up', duration: 1.1, ease: 'inOut', pose: { s: 1.45, tx: 0.42, ty: -0.32 } }, (s) => {
+  // As on origami.me's diagram the swan sits on its open edges, so it tips back until they are level: the tail rises.
+  F.step({ diagram: 7, label: 'Pull the neck up', duration: 1.1, ease: 'inOut', pose: { rz: 90 - TILT, s: 1.6, tx: 0.34, ty: -0.22 } }, (s) => {
     neck = s.reverse(s.select((f) => f.flat).filter(isNeck), neckCrease, { side: [0, 1], axis: neckAxis, front, kind: 'outside', roll: 'last', book: true });
   });
 

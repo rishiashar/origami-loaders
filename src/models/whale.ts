@@ -4,9 +4,10 @@ import type { P2 } from '../geom';
 
 /**
  * The traditional whale: a kite with its narrow point as the tail, the wide
- * point folded back for a blunt head, the model folded in half along its belly,
- * and the tail lifted with an outside reverse fold. It swims with a flick of the
- * tail, then dives.
+ * point folded back for a blunt head, the model folded in half, and the tail
+ * lifted over the back with an outside reverse fold. As on origami.me's whale,
+ * the fold is its flat back and the body hangs below it. It swims with a flick
+ * of the tail, then dives.
  *
  * Sheet coordinates: the diamond with corners (0, ±1) and (±1, 0), coloured side
  * down. The left corner becomes the tail.
@@ -14,8 +15,13 @@ import type { P2 } from '../geom';
 
 const L: P2 = [-1, 0];
 const HEAD = 0.55;     // the wide point folds back along this line
-const TAIL = -0.5;     // where the tail's crease starts, on the belly
-const TAIL_DIR = 118;  // which way the lifted tail points (degrees; it lay along the belly at 180)
+/** Where the tail's crease starts on the back, near the tail's end. */
+const TAIL = -0.75;
+/**
+ * Which way the lifted tail points (degrees, model space; it lay along the back at 180). The body
+ * hangs on the +y side, so 265 is up over the back, leaning a little back: nearly upright.
+ */
+const TAIL_DIR = 265;
 const FLICK = -16;
 
 const kite = (σ: number): P2 => {
@@ -42,8 +48,8 @@ export function buildWhale() {
     s.fold([HEAD, -1], [HEAD, 1], { side: [1, 0], toward: -1 });
   });
 
-  // In half along the belly, the bottom half behind, so the back curves up to the head.
-  F.step({ diagram: 4, label: 'Fold in half', duration: 0.8, ease: 'inOut', pose: { s: 1.45, ty: -0.25 } }, (s) => {
+  // In half, the bottom half behind; then turned so the fold is on top, as the whale's flat back.
+  F.step({ diagram: 4, label: 'Fold in half', duration: 0.9, ease: 'inOut', pose: { rx: 162, s: 1.45, ty: 0.3 } }, (s) => {
     s.fold([-1, 0], [1, 0], { side: [0, -1], toward: 1 });
   });
 
@@ -51,7 +57,7 @@ export function buildWhale() {
   F.step({ diagram: 5, label: 'Lift the tail', duration: 0.8, ease: 'inOut', pose: { s: 1.5, ty: -0.35, tx: 0.08 } }, (s) => {
     const a = (((180 + TAIL_DIR) / 2) * Math.PI) / 180;
     const crease: [P2, P2] = [[TAIL, 0], [TAIL + Math.cos(a), Math.sin(a)]];
-    // The crease runs across the tail only: on its far side there is no paper.
+    // The crease runs up from the back across the tail only: on its far side there is no paper.
     const end = s.select((f) => f.flat);
     // Folded in half toward you, the bottom half of the sheet is the front.
     tail = s.reverse(end, crease, { side: L, axis: [[TAIL, 0], L], front: (f) => f.sheet[1] < 0, kind: 'outside', roll: 'last', book: true });
