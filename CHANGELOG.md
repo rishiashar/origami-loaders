@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `frog` folds the way origami.me teaches it. After the front legs, the bottom folds up and the sides fold in. Then the bottom is pushed up and its side flaps squash out to become real back legs. The bottom then folds up and back down in half for the spring. The finished frog sits side-on and pitches nose-up as it hops.
+
 ## 0.1.1
 
 - The README links to the demo site, [origami-loaders.vercel.app](https://origami-loaders.vercel.app), where every model, look and paper colour folds live.
