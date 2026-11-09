@@ -351,7 +351,7 @@
   #v-browser > .mock { left: 32px; top: 6px; width: 620px; }
   #v-launch > .device { left: 50%; top: 4px; translate: -50% 0; scale: 1.18; transform-origin: 50% 0; }
   #v-mail > .device { left: 50%; top: 4px; translate: -50% 0; scale: 1.18; transform-origin: 50% 0; }
-  #v-chat > .mock { left: 26px; right: 26px; top: 6px; bottom: 26px; width: auto; height: auto; }
+  #v-chat > .device { left: 50%; top: 4px; translate: -50% 0; scale: 0.92; transform-origin: 50% 0; }
   #v-send > .mock { left: 50%; top: 6px; translate: -50% 0; width: 400px; }
   #v-deploy > .mock { left: 32px; top: 6px; width: 760px; }
   @media (max-width: 600px) {
@@ -360,7 +360,7 @@
     .card-text p { font-size: 14px; }
     .visual { top: 140px; }
     #v-browser > .mock, #v-deploy > .mock { left: 20px; scale: 0.8; }
-    #v-chat > .mock { left: 16px; right: 16px; bottom: 16px; }
+    #v-chat > .device { scale: 0.78; }
     #v-launch > .device, #v-mail > .device { scale: 1.05; }
     #v-send > .mock { width: 360px; scale: 0.9; transform-origin: 50% 0; }
   }
@@ -371,7 +371,6 @@
   .device .launch-screen { background: var(--splash-bg); }
 
   .browser { width: 100%; max-width: 820px; }
-  .chat-window { width: 100%; max-width: 720px; }
   .transfer-window { width: 100%; max-width: 420px; }
   .dash { width: 100%; max-width: 860px; }
 
@@ -491,31 +490,52 @@
   .address b { color: var(--text); font-weight: 400; }
 
   .site { height: 406px; position: relative; }
-  .site-nav { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-shadow: inset 0 -1px var(--hairline); }
+  .site-nav { height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 24px; box-shadow: inset 0 -1px var(--hairline); }
   .site-nav .logo { font-weight: 600; letter-spacing: -0.01em; }
   .site-nav nav { display: flex; gap: 18px; color: var(--muted); }
-  .site-body { position: absolute; inset: 48px 0 0; }
+  .site-body { position: absolute; inset: 68px 0 0; }
   .site-loading, .site-content { position: absolute; inset: 0; transition: opacity 220ms ease-out, visibility 220ms; }
   .site-loading { display: grid; place-items: center; }
   .site-loading origami-loader { width: 64px; height: 64px; }
   .browser:not(.is-loading) .site-loading, .browser.is-loading .site-content { opacity: 0; visibility: hidden; }
-  .site-content { padding: 26px 24px; display: grid; grid-template-rows: auto 1fr; gap: 18px; }
+  .site-content { padding: 20px 24px; display: grid; grid-template-rows: auto auto; align-content: start; gap: 16px; }
   .site-hero { font-size: 17px; font-weight: 500; letter-spacing: -0.01em; }
   .products { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; min-height: 0; }
-  .product { display: grid; grid-template-rows: 1fr auto; gap: 8px; min-height: 0; }
+  .product { display: grid; gap: 8px; min-height: 0; }
   .product .photo { border-radius: 8px; background: var(--photo-bg); min-height: 0; display: grid; place-items: center; overflow: hidden; }
-  /* Paper packs, fanned out: what the shop sells. */
-  .pack { position: relative; width: 44%; aspect-ratio: 1; translate: -8% 4%; }
-  .pack i { position: absolute; inset: 0; border-radius: 1.5px; box-shadow: 0 0 0 0.5px oklch(0 0 0 / 0.06), 0 2px 4px -1px oklch(0 0 0 / 0.14); }
-  .pack i:nth-child(1) { background: var(--c); rotate: 22deg; translate: 18% -6%; }
-  .pack i:nth-child(2) { background: var(--b); rotate: 10deg; translate: 8% -2%; }
-  .pack i:nth-child(3) { background: var(--a); rotate: -4deg; }
-  .pack.washi i:nth-child(3) { background: radial-gradient(circle at 30% 30%, oklch(1 0 0 / 0.55) 0 7%, transparent 8%) 0 0 / 34% 34%, var(--a); }
-  .pack.washi i:nth-child(2) { background: repeating-linear-gradient(45deg, oklch(1 0 0 / 0.4) 0 3px, transparent 3px 9px), var(--b); }
-  .pack.foil i { background-image: linear-gradient(135deg, oklch(1 0 0 / 0.55), transparent 45%, oklch(0 0 0 / 0.12) 70%, oklch(1 0 0 / 0.35)); }
-  .pack.foil i:nth-child(1) { background-color: var(--c); }
-  .pack.foil i:nth-child(2) { background-color: var(--b); }
-  .pack.foil i:nth-child(3) { background-color: var(--a); }
+  /* People and projects get their own colour, like they do in real apps. */
+  .avatar[style*="--hue"] { background: oklch(0.93 0.04 var(--hue)); color: oklch(0.42 0.09 var(--hue)); }
+  :root[data-theme="dark"] .avatar[style*="--hue"] { background: oklch(0.32 0.05 var(--hue)); color: oklch(0.86 0.06 var(--hue)); }
+  .to { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 6px; border-radius: 8px; box-shadow: 0 0 0 1px var(--hairline); }
+  .chip { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px 0 2px; border-radius: 12px; background: var(--code-bg); color: var(--text); }
+  .chip .avatar { width: 20px; height: 20px; font-size: 8.5px; }
+  .compose .actions { justify-content: space-between; align-items: center; }
+  .expiry { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; }
+  .project { display: flex; align-items: center; gap: 10px; }
+  .project-mark { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: linear-gradient(135deg, oklch(0.72 0.14 40), oklch(0.6 0.16 15)); color: oklch(1 0 0); font-weight: 700; font-size: 13px; }
+  .env { display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 999px; background: oklch(0.94 0.03 250); color: oklch(0.45 0.1 250); font-size: 10.5px; font-weight: 500; vertical-align: 1px; }
+  :root[data-theme="dark"] .env { background: oklch(0.3 0.05 250); color: oklch(0.85 0.06 250); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .avatar[style*="--hue"] { background: oklch(0.32 0.05 var(--hue)); color: oklch(0.86 0.06 var(--hue)); }
+    :root:not([data-theme="light"]) .env { background: oklch(0.3 0.05 250); color: oklch(0.85 0.06 250); }
+  }
+  #ex-browser .favicon .mark { background: oklch(0.66 0.14 22); color: transparent; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+
+  /* The shop: product photos, badges, a bag with something in it. */
+  .site-bar { height: 22px; display: grid; place-items: center; background: oklch(0.32 0.03 25); color: oklch(0.97 0.01 60); font-size: 10.5px; letter-spacing: 0.01em; }
+  .site-nav .logo { display: flex; align-items: center; gap: 7px; }
+  .logo-mark { width: 14px; height: 14px; background: oklch(0.66 0.14 22); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+  .site-icons { display: flex; align-items: center; gap: 14px; color: var(--text); }
+  .site-icons .bag { position: relative; display: grid; }
+  .site-icons .bag i { position: absolute; top: -5px; right: -7px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; background: oklch(0.66 0.14 22); color: oklch(1 0 0); font: 600 9px/14px var(--sans); font-style: normal; text-align: center; }
+  .site-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
+  .shop-all { color: var(--text); font-weight: 500; white-space: nowrap; box-shadow: inset 0 -1px var(--text); }
+  .product .photo { position: relative; aspect-ratio: 4 / 3; }
+  .product .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .product .badge { position: absolute; left: 8px; top: 8px; padding: 2px 7px; border-radius: 999px; background: oklch(1 0 0 / 0.92); color: oklch(0.25 0.01 60); font-size: 10px; font-weight: 500; box-shadow: 0 1px 2px oklch(0 0 0 / 0.08); }
+  .product .badge.new { background: oklch(0.66 0.14 22); color: oklch(1 0 0); }
+  .product .row { margin-top: 2px; font-weight: 500; }
+  .product .meta { color: var(--muted); font-size: 11px; margin-top: -6px; }
   .product .row { display: flex; justify-content: space-between; }
 
   /* Phones */
@@ -568,40 +588,74 @@
   .mail-list .subject { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mail-list .preview { color: var(--muted); font-size: 11.5px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-  /* Chat */
-  .chat-window { display: grid; grid-template-rows: 40px minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr); height: 486px; }
-  .thread { overflow-y: auto; padding: 20px 22px 8px; display: flex; flex-direction: column; gap: 14px; scrollbar-width: none; }
+  /* Chat: an assistant app on a phone. */
+  .chat-app { display: flex; flex-direction: column; background: var(--win-bg); }
+  .chat-head {
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: 26px 1fr 26px; align-items: center;
+    padding: 0 10px 8px;
+    box-shadow: inset 0 -0.5px var(--hairline);
+  }
+  .chat-head .icon-button { color: var(--text); }
+  .chat-head .who { display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .chat-head .bot { width: 26px; height: 26px; border-radius: 50%; background: var(--code-bg); display: grid; place-items: center; overflow: hidden; }
+  .chat-head .bot origami-loader { width: 30px; height: 30px; --ol-stroke: 1px; --ol-bg: var(--code-bg); }
+  .chat-head b { display: block; font-weight: 600; font-size: 12.5px; line-height: 1.2; }
+  .chat-head #chat-status { display: block; font-size: 10.5px; line-height: 1.2; color: var(--muted); }
+  .thread {
+    flex: 1; min-height: 0; overflow-y: auto;
+    padding: 10px 12px 6px;
+    display: flex; flex-direction: column; gap: 9px;
+    scrollbar-width: none;
+    font-size: 12px; line-height: 1.45;
+  }
   .thread::-webkit-scrollbar { display: none; }
-  .msg { max-width: 82%; white-space: pre-line; }
-  .msg.user { align-self: flex-end; padding: 8px 12px; border-radius: 16px; background: var(--code-bg); }
-  .msg.ai { align-self: flex-start; }
-  .attachment {
+  .thread .day { align-self: center; color: var(--faint); font-size: 10px; margin-bottom: 2px; }
+  .msg { max-width: 84%; white-space: pre-line; }
+  .msg.user { align-self: flex-end; padding: 6px 10px; border-radius: 16px 16px 4px 16px; background: var(--code-bg); }
+  .msg.ai { align-self: flex-start; max-width: 96%; }
+  .msg-actions { display: flex; gap: 10px; margin-top: -3px; color: var(--faint); }
+  .msg-actions .icon { width: 13px; height: 13px; }
+  .file {
     align-self: flex-end;
     display: flex; align-items: center; gap: 8px;
-    padding: 7px 10px; border-radius: 12px;
-    box-shadow: 0 0 0 1px var(--hairline);
-  }
-  .attachment .doc { width: 26px; height: 32px; border-radius: 4px; background: var(--code-bg); display: grid; place-items: center; color: var(--muted); font-size: 8px; font-weight: 700; }
-  .thinking { display: flex; align-items: center; gap: 4px; color: var(--muted); }
-  .thinking origami-loader { width: 24px; height: 24px; margin-inline-start: -4px; --ol-stroke: 1px; --ol-ink: var(--muted); }
-  .composer {
-    margin: 8px 14px 14px;
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 6px 6px 10px;
-    border-radius: 14px;
-    box-shadow: 0 0 0 1px var(--hairline);
+    padding: 7px 10px 7px 7px; border-radius: 12px;
+    box-shadow: 0 0 0 0.5px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.04);
     background: var(--win-bg);
   }
+  .file .doc { width: 24px; height: 30px; border-radius: 4px; background: oklch(0.6 0.17 27); color: oklch(1 0 0); display: grid; place-items: center; font-size: 7px; font-weight: 700; letter-spacing: 0.02em; }
+  .file b { display: block; font-weight: 500; font-size: 11.5px; }
+  .file span span { display: block; color: var(--muted); font-size: 10px; }
+  .thinking { display: flex; align-items: center; gap: 3px; }
+  .thinking origami-loader { width: 22px; height: 22px; margin-inline-start: -4px; --ol-stroke: 1px; --ol-ink: var(--muted); }
+  /* The label shimmers the way assistant apps show they are working. */
+  .thinking span {
+    color: transparent;
+    background: linear-gradient(90deg, var(--muted) 0 35%, var(--text) 50%, var(--muted) 65% 100%) 0 0 / 300% 100%;
+    -webkit-background-clip: text; background-clip: text;
+    animation: shimmer 1.6s linear infinite;
+  }
+  @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+  @media (prefers-reduced-motion: reduce) { .thinking span { animation: none; color: var(--muted); } }
+  .composer {
+    margin: 6px 10px 30px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 4px 4px 4px;
+    border-radius: 20px;
+    box-shadow: 0 0 0 0.5px var(--hairline), 0 2px 8px -4px oklch(0 0 0 / 0.12);
+    background: var(--win-bg);
+  }
+  .composer .plus { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+  .composer .plus .icon { width: 15px; height: 15px; }
   .composer input {
     flex: 1; min-width: 0;
     border: 0; outline: 0; background: none;
-    font: inherit; font-size: 12.5px; color: var(--text);
+    font: inherit; font-size: 12px; color: var(--text);
   }
   .composer input::placeholder { color: var(--faint); }
-  .composer:focus-within { box-shadow: 0 0 0 1px var(--faint); }
-  .send-round { width: 28px; height: 28px; border-radius: 50%; background: var(--text); color: var(--win-bg); display: grid; place-items: center; transition: scale 150ms ease-out; }
+  .send-round { width: 26px; height: 26px; border-radius: 50%; background: var(--text); color: var(--win-bg); display: grid; place-items: center; transition: scale 150ms ease-out; }
   .send-round:active { scale: 0.96; }
-  .send-round .icon { width: 14px; height: 14px; stroke-width: 2; }
+  .send-round .icon { width: 13px; height: 13px; stroke-width: 2; }
 
   /* Send files */
   .transfer-window { height: 350px; display: grid; grid-template-rows: 40px 1fr; }
@@ -646,7 +700,6 @@
   .deploys time { color: var(--muted); text-align: end; font-variant-numeric: tabular-nums; }
   .deploys .current { background: linear-gradient(var(--hover), var(--hover)) no-repeat; background-size: 100% 100%; margin: 0 -22px; padding: 11px 22px; }
   @media (max-width: 600px) {
-    .chat-window { height: 420px; }
     .composer input { font-size: 16px; }
   }
   @media (max-width: 520px) {
@@ -832,6 +885,13 @@
         <symbol id="i-clip" viewBox="0 0 16 16"><path d="M13 7.5 8 12.5a3 3 0 0 1-4.2-4.2l5.3-5.3a2 2 0 0 1 2.8 2.8L6.6 11a1 1 0 0 1-1.4-1.4l4.6-4.6"/></symbol>
         <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></symbol>
         <symbol id="i-check" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7"/></symbol>
+        <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9"/></symbol>
+        <symbol id="i-clock" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.2l2 1.3"/></symbol>
+        <symbol id="i-bag" viewBox="0 0 16 16"><path d="M3.5 5.5h9l-.7 7.6a1 1 0 0 1-1 .9H5.2a1 1 0 0 1-1-.9Z"/><path d="M6 7V4.5a2 2 0 0 1 4 0V7"/></symbol>
+        <symbol id="i-edit" viewBox="0 0 16 16"><path d="M7.5 3H4.5A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5V8.5"/><path d="M11.6 2.9a1.2 1.2 0 0 1 1.7 1.7L8.5 9.4 6.5 10l.6-2Z"/></symbol>
+        <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="7.5" height="7.5" rx="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5"/></symbol>
+        <symbol id="i-like" viewBox="0 0 16 16"><path d="M5 7v6.5H3A.5.5 0 0 1 2.5 13V7.5A.5.5 0 0 1 3 7Zm0 0 2.7-4.4A1 1 0 0 1 9.5 3.3L9 6.5h3.4a1 1 0 0 1 1 1.2l-1 5a1 1 0 0 1-1 .8H5"/></symbol>
+        <symbol id="i-retry" viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.6-3.7"/><path d="M3 2.8v2.8h2.8"/></symbol>
       </defs>
     </svg>
     <ul class="examples wide">
@@ -858,15 +918,20 @@
               <div class="address"><svg class="icon small"><use href="#i-lock"/></svg><span><b>paper.studio</b>/shop</span></div>
             </div>
             <div class="site">
-              <div class="site-nav"><span class="logo">Paper Studio</span><nav><span>Shop</span><span>Colours</span><span>Sizes</span><span>About</span></nav></div>
+              <div class="site-bar">Free shipping over €40 · Rose gold foil is back</div>
+              <div class="site-nav">
+                <span class="logo"><span class="logo-mark" aria-hidden="true"></span>Paper Studio</span>
+                <nav><span>Shop</span><span>Colours</span><span>Sizes</span><span>Journal</span></nav>
+                <span class="site-icons" aria-hidden="true"><svg class="icon"><use href="#i-search"/></svg><span class="bag"><svg class="icon"><use href="#i-bag"/></svg><i>2</i></span></span>
+              </div>
               <div class="site-body">
                 <div class="site-loading"><origami-loader model="crane" look="paper" data-start="6" style="--ol-front: oklch(0.66 0.14 22)" aria-label="Loading paper.studio"></origami-loader></div>
                 <div class="site-content">
-                  <div><p class="site-hero">Paper for folding, cut square.</p><p class="muted">Kami, washi and foil from small mills. Ships flat.</p></div>
+                  <div class="site-head"><div><p class="site-hero">Paper for folding, cut square.</p><p class="muted">Kami, washi and foil from small mills. Ships flat.</p></div><span class="shop-all">Shop all</span></div>
                   <div class="products">
-                    <div class="product"><div class="photo"><span class="pack" style="--a: oklch(0.66 0.14 22); --b: oklch(0.8 0.11 75); --c: oklch(0.6 0.08 200)"><i></i><i></i><i></i></span></div><div class="row"><span>Kami, 15 cm</span><span class="muted tabular">€8</span></div></div>
-                    <div class="product"><div class="photo"><span class="pack washi" style="--a: oklch(0.78 0.07 350); --b: oklch(0.86 0.05 150); --c: oklch(0.9 0.04 85)"><i></i><i></i><i></i></span></div><div class="row"><span>Washi, 24 colours</span><span class="muted tabular">€14</span></div></div>
-                    <div class="product"><div class="photo"><span class="pack foil" style="--a: oklch(0.82 0.09 85); --b: oklch(0.86 0.01 250); --c: oklch(0.72 0.08 55)"><i></i><i></i><i></i></span></div><div class="row"><span>Foil, gold and silver</span><span class="muted tabular">€9</span></div></div>
+                    <div class="product"><div class="photo"><img src="assets/shop-kami.webp" alt="" width="480" height="480" loading="lazy" decoding="async"><span class="badge">Bestseller</span></div><div class="row"><span>Kami, 15 cm</span><span class="tabular">€8</span></div><div class="meta">100 sheets · 10 colours</div></div>
+                    <div class="product"><div class="photo"><img src="assets/shop-washi.webp" alt="" width="480" height="480" loading="lazy" decoding="async"></div><div class="row"><span>Washi prints</span><span class="tabular">€14</span></div><div class="meta">24 sheets · 6 patterns</div></div>
+                    <div class="product"><div class="photo"><img src="assets/shop-foil.webp" alt="" width="480" height="480" loading="lazy" decoding="async"><span class="badge new">New</span></div><div class="row"><span>Foil, three metals</span><span class="tabular">€9</span></div><div class="meta">30 sheets · gold, rose, silver</div></div>
                   </div>
                 </div>
               </div>
@@ -946,19 +1011,35 @@
           <button class="action" type="button" id="act-ask"><svg class="icon"><use href="#i-up"/></svg>Ask a follow-up</button>
         </div>
         <div class="visual" id="v-chat">
-          <div class="mock window chat-window" id="ex-chat">
-            <div class="chrome"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">Assistant</span></div>
-            <div class="thread" id="thread" aria-live="polite">
-              <div class="attachment"><span class="doc">PDF</span><span><span style="display:block">Lease agreement.pdf</span><span class="muted">12 pages</span></span></div>
-              <div class="msg user">Can you summarise this contract in three lines?</div>
+          <div class="mock device">
+            <div class="screen chat-app" id="ex-chat">
+              <div class="island"></div>
+              <div class="status" aria-hidden="true"><span class="tabular">9:41</span><span class="icons">
+                  <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+                  <svg width="15" height="11" viewBox="0 0 15 11"><path d="M7.5 2.2c2.2 0 4.2.9 5.7 2.3l1.1-1.1A9.6 9.6 0 0 0 7.5.6 9.6 9.6 0 0 0 .7 3.4l1.1 1.1a8 8 0 0 1 5.7-2.3Zm0 3.2c1.3 0 2.5.5 3.4 1.4l1.1-1.1a6.3 6.3 0 0 0-9 0l1.1 1.1c.9-.9 2.1-1.4 3.4-1.4Zm0 3.2a1.6 1.6 0 0 0-1.1.5L7.5 10.2l1.1-1.1a1.6 1.6 0 0 0-1.1-.5Z"/></svg>
+                  <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="16" height="8" rx="2"/><path d="M23 4v4c.8-.3 1.3-1.1 1.3-2S23.8 4.3 23 4Z" opacity="0.4"/></svg>
+                </span></div>
+              <div class="chat-head">
+                <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-left"/></svg></span>
+                <div class="who">
+                  <span class="bot"><origami-loader model="pleat" texture="none" progress="0.5" aria-hidden="true"></origami-loader></span>
+                  <span><b>Assistant</b><span id="chat-status">Online</span></span>
+                </div>
+                <span class="icon-button" aria-hidden="true"><svg class="icon"><use href="#i-edit"/></svg></span>
+              </div>
+              <div class="thread" id="thread" aria-live="polite">
+                <div class="day">Today 9:41</div>
+                <div class="file"><span class="doc">PDF</span><span><b>Lease agreement.pdf</b><span>12 pages · 2.4 MB</span></span></div>
+                <div class="msg user">Can you summarise this contract in three lines?</div>
+              </div>
+              <form class="composer" id="composer">
+                <span class="plus" aria-hidden="true"><svg class="icon"><use href="#i-plus"/></svg></span>
+                <input id="chat-input" type="text" placeholder="Ask anything" autocomplete="off" aria-label="Message the assistant">
+                <button class="send-round" type="submit" aria-label="Send message"><svg class="icon"><use href="#i-up"/></svg></button>
+              </form>
+              <div class="home-bar"></div>
             </div>
-            <form class="composer" id="composer">
-              <svg class="icon" style="color:var(--muted)" aria-hidden="true"><use href="#i-clip"/></svg>
-              <input id="chat-input" type="text" placeholder="Ask a follow-up" autocomplete="off" aria-label="Message the assistant">
-              <button class="send-round" type="submit" aria-label="Send message"><svg class="icon"><use href="#i-up"/></svg></button>
-            </form>
-          </div>
-        </div>
+          </div>        </div>
       </li>
       <li class="card">
         <img class="card-bg" src="assets/bg-send.webp" alt="" width="2048" height="1152" loading="lazy" decoding="async">
@@ -971,10 +1052,10 @@
             <div class="chrome"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="name">Send files</span></div>
             <div class="panes">
               <div class="pane compose" id="tx-compose" data-active>
-                <div class="file-row"><span class="doc">PDF</span><span><span style="display:block">Spring catalogue.pdf</span><span class="muted tabular">4.2 MB</span></span></div>
-                <label class="field">To<input type="email" value="maya@studio.co" tabindex="-1" readonly></label>
+                <div class="file-row"><span class="doc">PDF</span><span><span style="display:block">Spring catalogue.pdf</span><span class="muted tabular">4.2 MB · 14 pages</span></span></div>
+                <div class="field">To<div class="to"><span class="chip"><span class="avatar" style="--hue: 250">MC</span>Maya Chen</span><span class="muted">maya@studio.co</span></div></div>
                 <label class="field">Message<input type="text" value="Final version, with the new samples." tabindex="-1" readonly></label>
-                <div class="actions"><button class="primary" type="button" id="tx-send">Send</button></div>
+                <div class="actions"><span class="muted expiry"><svg class="icon small"><use href="#i-clock"/></svg>Link expires in 7 days</span><button class="primary" type="button" id="tx-send">Send</button></div>
               </div>
               <div class="pane sending" id="tx-sending">
                 <origami-loader model="plane" look="paper" id="tx-loader" progress="0" style="--ol-front: oklch(0.58 0.12 250); --ol-back: oklch(0.98 0.004 250)" aria-label="Sending Spring catalogue.pdf"></origami-loader>
@@ -1011,17 +1092,17 @@
               <div class="address"><svg class="icon small"><use href="#i-lock"/></svg><span><b>deploy.acme.dev</b>/acme/web</span></div>
             </div>
             <div class="dash-body">
-              <div class="dash-head"><div><div>acme/web</div><div class="sub">Production deployments</div></div><button class="primary" type="button" id="redeploy">Redeploy</button></div>
+              <div class="dash-head"><div class="project"><span class="project-mark" aria-hidden="true">A</span><div><div>acme/web <span class="env">Production</span></div><div class="sub">acme.dev · main</div></div></div><button class="primary" type="button" id="redeploy">Redeploy</button></div>
               <ul class="deploys">
                 <li class="current">
                   <span class="state"><origami-loader model="crane" id="deploy-loader" progress="0" texture="none" style="--ol-ink: var(--muted)" aria-label="Deployment in progress"></origami-loader><i class="dot ok" id="deploy-dot" hidden></i><span id="deploy-state">Queued</span></span>
                   <span class="commit"><span>Fix checkout copy</span><span class="meta">main · 4f2c1ab</span></span>
-                  <span class="avatar">RA</span>
+                  <span class="avatar" style="--hue: 25">RA</span>
                   <time id="deploy-time">0:00</time>
                 </li>
-                <li><span class="state"><i class="dot ok"></i>Ready</span><span class="commit"><span>Update pricing page</span><span class="meta">main · 9b1e0d2</span></span><span class="avatar">MC</span><time>2h ago</time></li>
-                <li><span class="state"><i class="dot ok"></i>Ready</span><span class="commit"><span>Add the paper crane loader</span><span class="meta">main · 1a7c3e9</span></span><span class="avatar">RA</span><time>Yesterday</time></li>
-                <li><span class="state"><i class="dot err"></i>Error</span><span class="commit"><span>Try a new image CDN</span><span class="meta">exp/cdn · 77de012</span></span><span class="avatar">HT</span><time>2d ago</time></li>
+                <li><span class="state"><i class="dot ok"></i>Ready</span><span class="commit"><span>Update pricing page</span><span class="meta">main · 9b1e0d2</span></span><span class="avatar" style="--hue: 250">MC</span><time>2h ago</time></li>
+                <li><span class="state"><i class="dot ok"></i>Ready</span><span class="commit"><span>Add the paper crane loader</span><span class="meta">main · 1a7c3e9</span></span><span class="avatar" style="--hue: 25">RA</span><time>Yesterday</time></li>
+                <li><span class="state"><i class="dot err"></i>Error</span><span class="commit"><span>Try a new image CDN</span><span class="meta">exp/cdn · 77de012</span></span><span class="avatar" style="--hue: 150">HT</span><time>2d ago</time></li>
               </ul>
             </div>
           </div>
@@ -1335,6 +1416,7 @@
     "The deposit is two months' rent. It comes back within 30 days of moving out, minus any damage.",
   ];
   var answered = 0, busy = false;
+  var chatStatus = document.getElementById('chat-status');
   function scrollThread() { thread.scrollTop = thread.scrollHeight; }
   function think(label, then) {
     busy = true;
@@ -1346,23 +1428,36 @@
     loader.setAttribute('texture', 'none');
     loader.setAttribute('aria-label', 'Writing a reply');
     row.appendChild(loader);
-    row.appendChild(document.createTextNode(label));
+    var text = document.createElement('span');
+    text.textContent = label;
+    row.appendChild(text);
     thread.appendChild(row);
+    chatStatus.textContent = 'Thinking…';
     loader.seek(1 + Math.random() * 18);
     scrollThread();
-    setTimeout(function () { row.remove(); then(); }, 3200);
+    setTimeout(function () { row.remove(); chatStatus.textContent = 'Typing…'; then(); }, 3200);
   }
   function stream(text) {
     var msg = document.createElement('div');
     msg.className = 'msg ai';
     thread.appendChild(msg);
     var parts = text.split(/(\s+)/), i = 0;
-    if (reduce) { msg.textContent = text; scrollThread(); busy = false; return; }
+    function done() {
+      var actions = document.createElement('div');
+      actions.className = 'msg-actions';
+      actions.setAttribute('aria-hidden', 'true');
+      actions.innerHTML = '<svg class="icon"><use href="#i-copy"/></svg><svg class="icon"><use href="#i-like"/></svg><svg class="icon" style="scale:1 -1"><use href="#i-like"/></svg><svg class="icon"><use href="#i-retry"/></svg>';
+      thread.appendChild(actions);
+      chatStatus.textContent = 'Online';
+      scrollThread();
+      busy = false;
+    }
+    if (reduce) { msg.textContent = text; done(); return; }
     (function next() {
       msg.textContent += parts.slice(i, i + 2).join('');
       i += 2;
       scrollThread();
-      if (i < parts.length) setTimeout(next, 32); else busy = false;
+      if (i < parts.length) setTimeout(next, 32); else done();
     })();
   }
   onceVisible(document.getElementById('ex-chat'), function () {
