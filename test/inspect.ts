@@ -9,9 +9,8 @@
  * - cancel: a face rides joints that undo each other within one step. That is
  *   almost always a fold line running on into a flap it was not meant for.
  * - tear:  two faces that share a crease drift apart. Paper never does this,
- *   so every crease is checked at many moments of every step. The only steps
- *   let off are the ones named in BENDS: folds real paper can only make by
- *   bending, which flat faces cannot do, so there only the end counts.
+ *   so every crease is checked at many moments of every step, with no
+ *   exceptions.
  */
 import { apply, mul, type Mat, type Vec3 } from '../src/math';
 import { ccw, centroid, clipConvex, signedArea, type P2 } from '../src/geom';
@@ -40,16 +39,6 @@ const TEAR_MOMENTS = Array.from({ length: 40 }, (_, i) => ((i + 1) / 40) * 0.999
 /** Largest gap between two faces along a shared crease that still counts as joined. */
 const MAX_GAP = 2e-3;
 
-/**
- * Steps where paper has to bend to get there: an inside reverse fold of a point that starts out
- * straight. The point's layers must spread and its spine pop through, and no motion of flat,
- * rigid faces does that with the rest of the model closed. Until the engine can bend paper these
- * show the point rolling over and swinging round, and its crease opens on the way.
- */
-export const BENDS: Record<string, string[]> = {
-  crane: ['Reverse fold the neck up', 'Reverse fold the tail up', 'Reverse fold the head'],
-};
-
 function sameMat(a: Mat, b: Mat, eps = 1e-7) {
   for (let i = 0; i < 12; i++) if (Math.abs(a[i] - b[i]) > eps) return false;
   return true;
@@ -63,7 +52,7 @@ function depthAt(p0: Vec3, n: Vec3, sx: number, sy: number, D: number): number {
   return (n[0] * p0[0] + n[1] * p0[1] + n[2] * (p0[2] - D)) / den;
 }
 
-export function inspect(m: Folded, moments = MOMENTS, bends: string[] = []): Issue[] {
+export function inspect(m: Folded, moments = MOMENTS): Issue[] {
   const player = new Player(m);
   const issues: Issue[] = [];
   const D = defaultCamera.distance;
@@ -135,9 +124,8 @@ export function inspect(m: Folded, moments = MOMENTS, bends: string[] = []): Iss
 
     }
 
-    // Tearing: no crease may open at any moment (only at the end, where the paper has to bend).
-    const bent = bends.includes(step.label);
-    for (const u of bent ? [0.999] : TEAR_MOMENTS) {
+    // Tearing: no crease may open at any moment.
+    for (const u of TEAR_MOMENTS) {
       const frame = player.evaluate(m.starts[k] + step.duration * u);
       let gap = 0, at = -1;
       m.edges.forEach((e, i) => {
