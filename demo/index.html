@@ -240,6 +240,26 @@
     .list button:hover .title { color: var(--text); }
   }
 
+  /* Models: every model, folding live. */
+  .models {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 24px 16px;
+  }
+  .wide-grid { width: min(880px, calc(100vw - 48px)); position: relative; left: 50%; translate: -50% 0; }
+  .models button { display: block; width: 100%; text-align: start; }
+  .models origami-loader { display: block; width: 100%; height: auto; aspect-ratio: 1; --ol-bg: var(--bg); pointer-events: none; }
+  .models .title { display: block; margin-top: 4px; color: var(--muted); transition: color 150ms ease-out; }
+  .models .description { display: block; color: var(--muted); font-size: var(--size-small); line-height: 1.5; text-wrap: pretty; }
+  .models button[aria-pressed="true"] .title { color: var(--text); }
+  @media (hover: hover) and (pointer: fine) {
+    .models button:hover .title { color: var(--text); }
+  }
+  @media (max-width: 760px) { .models { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 480px) { .models { grid-template-columns: repeat(2, 1fr); } }
+
   /* Looks: the four styles as real loaders. */
   .looks {
     list-style: none;
@@ -732,19 +752,47 @@
 
   <section>
     <h2>Models</h2>
-    <ul class="list">
-      <li>
-        <button type="button" data-model="crane" aria-pressed="true">
-          <span class="title">Crane</span>
-          <span class="description" style="display:block">The traditional crane, all 14 steps. About 25 seconds a loop.</span>
-        </button>
-      </li>
-      <li>
-        <button type="button" data-model="plane" aria-pressed="false">
-          <span class="title">Plane</span>
-          <span class="description" style="display:block">The classic dart in 7 steps. About 10 seconds, then it flies off.</span>
-        </button>
-      </li>
+    <ul class="models wide-grid" id="models">
+      <li><button type="button" data-model="crane" aria-pressed="true">
+        <origami-loader model="crane" look="ink" texture="none" aria-hidden="true"></origami-loader>
+        <span class="title">Crane</span><span class="description">The traditional crane, all 14 steps. About 25 seconds a loop.</span>
+      </button></li>
+      <li><button type="button" data-model="plane" aria-pressed="false">
+        <origami-loader model="plane" look="ink" texture="none" aria-hidden="true"></origami-loader>
+        <span class="title">Plane</span><span class="description">The classic dart in 7 steps. Circles once, then flies off.</span>
+      </button></li>
+      <li><button type="button" data-model="pleat" aria-pressed="false">
+        <origami-loader model="pleat" look="ink" texture="none" aria-hidden="true"></origami-loader>
+        <span class="title">Pleat</span><span class="description">An accordion that breathes, for waits with no end in sight.</span>
+      </button></li>
+      <li><button type="button" data-model="envelope" aria-pressed="false">
+        <origami-loader model="envelope" look="ink" texture="none" aria-hidden="true"></origami-loader>
+        <span class="title">Envelope</span><span class="description">Four corners to the centre: a quarter of the work, one corner.</span>
+      </button></li>
+      <li><button type="button" data-model="boat" aria-pressed="false">
+        <origami-loader model="boat" look="ink" texture="none" aria-hidden="true"></origami-loader>
+        <span class="title">Boat</span><span class="description">A sailboat in three folds. Rocks on the water, then sails off.</span>
+      </button></li>
+      <li><button type="button" data-model="frog" aria-pressed="false">
+        <origami-loader model="frog" look="ink" texture="none" aria-hidden="true"></origami-loader>
+        <span class="title">Frog</span><span class="description">A frog&rsquo;s face. Hops twice, then hops away.</span>
+      </button></li>
+      <li><button type="button" data-model="swan" aria-pressed="false">
+        <origami-loader model="swan" look="ink" texture="none" aria-hidden="true"></origami-loader>
+        <span class="title">Swan</span><span class="description">Kite, neck, head. Drifts on the water, then glides off.</span>
+      </button></li>
+      <li><button type="button" data-model="heart" aria-pressed="false">
+        <origami-loader model="heart" look="ink" texture="none" aria-hidden="true"></origami-loader>
+        <span class="title">Heart</span><span class="description">The classic heart, folded on the side you see. It beats.</span>
+      </button></li>
+      <li><button type="button" data-model="whale" aria-pressed="false">
+        <origami-loader model="whale" look="ink" texture="none" aria-hidden="true"></origami-loader>
+        <span class="title">Whale</span><span class="description">A kite with its tail lifted. Swims, flicks its tail, dives.</span>
+      </button></li>
+      <li><button type="button" data-model="fox" aria-pressed="false">
+        <origami-loader model="fox" look="ink" texture="none" aria-hidden="true"></origami-loader>
+        <span class="title">Fox</span><span class="description">A fox&rsquo;s face. Tilts its head and twitches its ears.</span>
+      </button></li>
     </ul>
   </section>
 
@@ -1103,12 +1151,18 @@
       var m = b.getAttribute('data-model');
       if (hero.getAttribute('model') === m) return;
       hero.setAttribute('model', m);
-      // Each look shows the model at its fullest flat moment: the bird base, or the flat dart.
-      minis.forEach(function (l) { l.setAttribute('model', m); l.setAttribute('progress', m === 'plane' ? '0.436' : '0.615'); });
+      // Each look shows the model at a telling moment: the crane's bird base, the flat dart, the rest finished.
+      var still = { crane: '0.615', plane: '0.436' };
+      minis.forEach(function (l) { l.setAttribute('model', m); l.setAttribute('progress', still[m] || '1'); });
       setPressed('[data-model]', 'data-model', m);
-      hero.setAttribute('aria-label', m === 'plane' ? 'A paper plane folding itself' : 'A paper crane folding itself');
+      hero.setAttribute('aria-label', 'A paper ' + m + ' folding itself');
       if (inProgressMode()) hero.setAttribute('progress', (range.value / 1000).toFixed(3));
       showStep(hero.currentStep);
+      // Picked from the grid below: bring the big one into view.
+      var r = hero.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) {
+        hero.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }
     });
   });
 

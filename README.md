@@ -31,7 +31,7 @@ Without a bundler, load the IIFE build from jsDelivr:
 
 | Attribute  | Values                                   | Default | Description |
 | ---------- | ---------------------------------------- | ------- | ----------- |
-| `model`    | `crane` \| `plane`                       | `crane` | Which origami model to fold. |
+| `model`    | `crane`, `plane`, `pleat`, `envelope`, `boat`, `frog`, `swan`, `heart`, `whale`, `fox` | `crane` | Which origami model to fold. |
 | `look`     | `ink` \| `blueprint` \| `graphite` \| `paper` | `ink`   | Rendering style. |
 | `theme`    | `light` \| `dark` \| `auto`              | `auto`  | `auto` follows `prefers-color-scheme`. |
 | `speed`    | number                                   | `1`     | Playback speed multiplier. |
@@ -88,8 +88,20 @@ el.restart(); // or set progress again to fold a fresh sheet
 
 ## Models
 
-- **crane** is the default. It folds all 14 steps of the classic diagram and takes about 25 seconds per loop.
-- **plane** is the classic paper dart. It has about 7 steps and takes about 10 seconds per loop. Select it with `model="plane"`.
+| Model | What it does |
+| --- | --- |
+| `crane` | The default. All 14 steps of the classic diagram, about 25 seconds a loop, then it flies off. |
+| `plane` | The classic dart in 7 steps. Circles once, then flies off. |
+| `pleat` | An accordion that breathes. Made for "thinking" and other waits with no end in sight. |
+| `envelope` | Four corners to the centre, so progress maps neatly: a quarter of the work, one corner. |
+| `boat` | A sailboat in three folds. Rocks on the water, then sails off. |
+| `frog` | A frog's face. Hops twice, then hops away. |
+| `swan` | Kite, neck, head. Drifts on the water, then glides off. |
+| `heart` | The classic heart, folded on the side you see. It beats. |
+| `whale` | A kite with its tail lifted. Swims, flicks its tail, dives. |
+| `fox` | A fox's face. Tilts its head and twitches its ears. |
+
+Pick one with the `model` attribute:
 
 ```html
 <origami-loader model="plane"></origami-loader>
@@ -111,7 +123,8 @@ The paper crane folds through all 14 steps of the classic diagram, about 25 seco
 - [x] Four looks, light and dark, recolourable, with procedural paper grain
 - [x] Progress mode, reduced motion, pauses off screen
 - [x] A second model, the paper plane
-- [ ] More models: boat, frog, …
+- [x] Ten models: crane, plane, pleat, envelope, boat, frog, swan, heart, whale, fox
+- [x] A fold check in the test suite that catches the wrong layer showing, folds that undo themselves, and torn creases
 - [ ] Static SVG export for no-JS / `<img>` use
 - [ ] Paper look: wing tops should show the coloured side
 
@@ -123,13 +136,15 @@ A model is written the way origami is taught: one fold at a time, against the pa
 2. **Joints move the faces.** A hinge rotates faces about a fold line; a swing turns them in the plane (for reverse folds); joints chain, so a flap can fold while it is being lifted.
 3. **Compound folds are solved.** The square base and the petal folds move several creases at once. Those angles are left free, `pin` says which corners must stay together, and a small Gauss–Newton solver works out the angles along the whole motion so the paper never tears.
 4. **Layers are tracked.** After every step the engine works out which face ended up on top wherever two overlap, and gives every face a layer height, so flat stacks have real thickness.
-5. **Rendering.** Faces are projected with a perspective camera and shaded by how they face a light. Faces lying flat together are drawn as one panel and painted back-to-front with plane tests and a topological sort (`src/scene.ts`).
+5. **Rendering.** Faces are projected with a perspective camera and shaded by how they face a light. Faces lying flat together are drawn as one panel and painted back-to-front with plane tests and a topological sort; where no plane separates two panels, the one nearer the eye where they actually overlap goes on top (`src/scene.ts`).
 6. **Paper.** Paper Shaders' paper-texture shader renders the grain once per page on a hidden WebGL canvas; the result is baked into an image that each panel maps in sheet space, so the grain folds with the paper (`src/paper-shader.ts`, with a small CPU fallback in `src/texture.ts`).
 7. **Looks are CSS** (`src/styles.ts`).
 
-The crane compiles in about 50 ms on first use. A frame costs about 1 ms of script. The whole package, crane included, is about 13 kB gzipped.
+The crane compiles in about 50 ms on first use. A frame costs about 1 ms of script. The whole package, all ten models included, is about 17 kB gzipped.
 
 ## Development
+
+`npm test` also runs a fold check over every model (`test/inspect.ts`, under a second). At several moments in every step it lays the frame out exactly as the renderer does and fails if a farther layer is painted over a nearer one (the wrong side of the paper showing), if a face rides folds that undo each other, or if a crease tears.
 
 ```sh
 npm install

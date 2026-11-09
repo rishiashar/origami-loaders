@@ -1,7 +1,11 @@
 import { defineOrigamiLoader } from './element';
 
 export { OrigamiLoader, defineOrigamiLoader, type Look, type StepInfo } from './element';
-export { registerModel, getModel, buildCrane, buildPlane, buildPleat, buildEnvelope, type ModelBuilder } from './models/index';
+export {
+  registerModel, getModel, listModels,
+  buildCrane, buildPlane, buildPleat, buildEnvelope, buildBoat, buildFrog, buildSwan, buildHeart, buildWhale, buildFox,
+  type ModelBuilder,
+} from './models/index';
 export { Folder, StepBuilder, LAYER, type Folded, type Face, type FaceInfo, type Filter, type Joint, type Step, type StepMeta } from './fold';
 export { Player, type Frame } from './player';
 export { eases, defaultPose, type EaseName, type Pose } from './motion';

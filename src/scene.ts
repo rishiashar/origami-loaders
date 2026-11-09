@@ -1,5 +1,5 @@
 import { DEG, apply, dot, mul, normalize, rotX, rotY, rotZ, scale, sub, translate, type Mat, type Vec3 } from './math';
-import { hull, type P2 } from './geom';
+import { ccw, centroid, clipConvex, hull, signedArea, type P2 } from './geom';
 import type { Folded } from './fold';
 import type { Frame } from './player';
 import type { Pose } from './motion';
@@ -25,10 +25,12 @@ export function poseMatrix(p: Pose): Mat {
   return mul(translate(p.tx, p.ty, p.tz), mul(rotZ(p.spin * DEG), mul(scale(p.s), mul(rotX(p.rx * DEG), mul(rotY(p.ry * DEG), rotZ(p.rz * DEG))))));
 }
 
-interface Panel {
+export interface Panel {
   faces: number[];
   pts: Vec3[];
   scr: P2[];
+  /** Screen outline of each face, counter-clockwise. */
+  polys: P2[][];
   normal: Vec3;
   center: Vec3;
   depth: number;
@@ -67,6 +69,31 @@ function overlaps(p: P2[], q: P2[]): boolean {
   return true;
 }
 
+/**
+ * When neither plane separates two panels, look where they really overlap on
+ * screen and see which is nearer there. 0 when they only touch.
+ */
+function overlapSide(a: Panel, b: Panel, D: number): number {
+  let best = 0, at: P2 | undefined;
+  for (const p of a.polys) {
+    for (const q of b.polys) {
+      const inter = clipConvex(p, q);
+      if (inter.length < 3) continue;
+      const area = Math.abs(signedArea(inter));
+      if (area > best) { best = area; at = centroid(inter); }
+    }
+  }
+  if (!at || best < 1e-7) return 0;
+  const dir: Vec3 = [at[0], -at[1], -D];
+  const reach = (p: Panel) => {
+    const den = dot(p.normal, dir);
+    return Math.abs(den) < 1e-12 ? Infinity : (p.normal[0] * p.center[0] + p.normal[1] * p.center[1] + p.normal[2] * (p.center[2] - D)) / den;
+  };
+  const da = reach(a), db = reach(b);
+  if (!isFinite(da) || !isFinite(db) || da === db) return 0;
+  return db < da ? 1 : -1;
+}
+
 /** Back-to-front order of panels. */
 export function paintOrder(panels: Panel[], cam: Camera = defaultCamera): number[] {
   const eye: Vec3 = [0, 0, cam.distance];
@@ -82,7 +109,8 @@ export function paintOrder(panels: Panel[], cam: Camera = defaultCamera): number
       if (!overlaps(hulls[i], hulls[j])) continue;
       let c = -planeSide(a, b, eye);
       if (!c) c = planeSide(b, a, eye);
-      if (!c) c = b.depth - a.depth;
+      if (!c) c = -overlapSide(a, b, cam.distance);
+      if (!c) continue;
       if (c < 0) { after[i].push(j); indeg[j]++; } else { after[j].push(i); indeg[i]++; }
     }
   }
@@ -97,6 +125,76 @@ export function paintOrder(panels: Panel[], cam: Camera = defaultCamera): number
     for (const j of after[pick]) indeg[j]--;
   }
   return order;
+}
+
+/** Everything a frame needs before drawing: faces in world and screen space, which creases are flat, panels and their paint order. */
+export interface Layout {
+  W: Mat[];
+  pts: Vec3[][];
+  scr: P2[][];
+  flat: Uint8Array;
+  panels: Panel[];
+  /** Panel indices, back to front. */
+  order: number[];
+}
+
+export function layoutFrame(m: Folded, frame: Frame, cam: Camera = defaultCamera): Layout {
+  const nF = m.faces.length;
+  const M = poseMatrix(frame.pose);
+  const D = cam.distance;
+  const eye: Vec3 = [0, 0, D];
+
+  // Faces in world space.
+  const W: Mat[] = new Array(nF);
+  const pts: Vec3[][] = new Array(nF);
+  const scr: P2[][] = new Array(nF);
+  const nModel: Vec3[] = new Array(nF);
+  for (let f = 0; f < nF; f++) {
+    const T = frame.T[f];
+    nModel[f] = [T[2], T[6], T[10]];
+    W[f] = mul(M, mul(translate(0, 0, frame.z[f]), T));
+    pts[f] = m.faces[f].map((v) => apply(W[f], m.verts[v][0], m.verts[v][1], 0));
+    scr[f] = pts[f].map(([x, y, z]) => { const k = D / (D - z); return [x * k, -y * k] as P2; });
+  }
+
+  // Crease states and panels.
+  const parent = Int32Array.from({ length: nF }, (_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  const flat = new Uint8Array(m.edges.length);
+  m.edges.forEach((e, i) => {
+    if (e.faces.length !== 2) return;
+    const [f, g] = e.faces;
+    if (dot(nModel[f], nModel[g]) > 1 - 1e-9) {
+      flat[i] = 1;
+      if (Math.abs(frame.z[f] - frame.z[g]) < 1e-9) parent[find(f)] = find(g);
+    }
+  });
+  const groups = new Map<number, number[]>();
+  for (let f = 0; f < nF; f++) {
+    const k = find(f);
+    const g = groups.get(k);
+    if (g) g.push(f); else groups.set(k, [f]);
+  }
+  const panels: Panel[] = [];
+  for (const faces of groups.values()) {
+    const P: Vec3[] = [], S: P2[] = [];
+    const center: Vec3 = [0, 0, 0];
+    const box = [Infinity, Infinity, -Infinity, -Infinity];
+    for (const f of faces) {
+      for (let i = 0; i < pts[f].length; i++) {
+        P.push(pts[f][i]); S.push(scr[f][i]);
+        const [x, y] = scr[f][i];
+        if (x < box[0]) box[0] = x; if (x > box[2]) box[2] = x;
+        if (y < box[1]) box[1] = y; if (y > box[3]) box[3] = y;
+      }
+    }
+    for (const p of P) { center[0] += p[0] / P.length; center[1] += p[1] / P.length; center[2] += p[2] / P.length; }
+    const w = W[faces[0]];
+    const d = sub(eye, center);
+    panels.push({ faces, pts: P, scr: S, polys: faces.map((f) => ccw(scr[f].slice())), normal: normalize([w[2], w[6], w[10]]), center, depth: Math.hypot(d[0], d[1], d[2]), box });
+  }
+
+  return { W, pts, scr, flat, panels, order: paintOrder(panels, cam) };
 }
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -171,62 +269,9 @@ export class SvgScene {
 
   render(frame: Frame): void {
     const m = this.m;
-    const nF = m.faces.length;
-    const M = poseMatrix(frame.pose);
     const D = this.cam.distance;
     const eye: Vec3 = [0, 0, D];
-
-    // Faces in world space.
-    const W: Mat[] = new Array(nF);
-    const pts: Vec3[][] = new Array(nF);
-    const scr: P2[][] = new Array(nF);
-    const nModel: Vec3[] = new Array(nF);
-    for (let f = 0; f < nF; f++) {
-      const T = frame.T[f];
-      nModel[f] = [T[2], T[6], T[10]];
-      W[f] = mul(M, mul(translate(0, 0, frame.z[f]), T));
-      pts[f] = m.faces[f].map((v) => apply(W[f], m.verts[v][0], m.verts[v][1], 0));
-      scr[f] = pts[f].map(([x, y, z]) => { const k = D / (D - z); return [x * k, -y * k] as P2; });
-    }
-
-    // Crease states and panels.
-    const parent = Int32Array.from({ length: nF }, (_, i) => i);
-    const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
-    const flat = new Uint8Array(m.edges.length);
-    m.edges.forEach((e, i) => {
-      if (e.faces.length !== 2) return;
-      const [f, g] = e.faces;
-      if (dot(nModel[f], nModel[g]) > 1 - 1e-9) {
-        flat[i] = 1;
-        if (Math.abs(frame.z[f] - frame.z[g]) < 1e-9) parent[find(f)] = find(g);
-      }
-    });
-    const groups = new Map<number, number[]>();
-    for (let f = 0; f < nF; f++) {
-      const k = find(f);
-      const g = groups.get(k);
-      if (g) g.push(f); else groups.set(k, [f]);
-    }
-    const panels: Panel[] = [];
-    for (const faces of groups.values()) {
-      const P: Vec3[] = [], S: P2[] = [];
-      const center: Vec3 = [0, 0, 0];
-      const box = [Infinity, Infinity, -Infinity, -Infinity];
-      for (const f of faces) {
-        for (let i = 0; i < pts[f].length; i++) {
-          P.push(pts[f][i]); S.push(scr[f][i]);
-          const [x, y] = scr[f][i];
-          if (x < box[0]) box[0] = x; if (x > box[2]) box[2] = x;
-          if (y < box[1]) box[1] = y; if (y > box[3]) box[3] = y;
-        }
-      }
-      for (const p of P) { center[0] += p[0] / P.length; center[1] += p[1] / P.length; center[2] += p[2] / P.length; }
-      const w = W[faces[0]];
-      const d = sub(eye, center);
-      panels.push({ faces, pts: P, scr: S, normal: normalize([w[2], w[6], w[10]]), center, depth: Math.hypot(d[0], d[1], d[2]), box });
-    }
-
-    const order = paintOrder(panels, this.cam);
+    const { W, scr, flat, panels, order } = layoutFrame(m, frame, this.cam);
     const k = frame.step;
     for (let i = 0; i < order.length; i++) {
       const p = panels[order[i]];
