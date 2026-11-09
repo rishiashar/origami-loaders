@@ -3,3 +3,5 @@ dist
 demo/dist
 captures
 *.log
+.vercel
+.env*
