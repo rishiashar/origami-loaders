@@ -306,6 +306,7 @@
     background: var(--card-bg);
     box-shadow: 0 0 0 1px var(--hairline);
     overflow: hidden;
+    overflow: clip;
     isolation: isolate;
   }
   /* Each card sits on a photo that dissolves into characters toward the top. */
@@ -327,7 +328,8 @@
   .card-text p { font-size: 15px; line-height: 1.5; color: var(--muted); max-width: 34ch; text-wrap: pretty; }
   .card-text b { color: var(--text); font-weight: var(--weight-medium); }
   .card-text .action { flex: none; margin-top: -3px; }
-  .visual { position: absolute; left: 0; right: 0; top: 132px; bottom: 0; overflow: hidden; }
+  /* clip, not hidden: a tap or focus inside must never scroll the cropped app out of place. */
+  .visual { position: absolute; left: 0; right: 0; top: 132px; bottom: 0; overflow: hidden; overflow: clip; }
   .visual > .mock, .visual > .device { position: absolute; transform-origin: 0 0; }
 
   .action {
@@ -359,7 +361,7 @@
     .card-text { padding: 22px 20px 0; }
     .card-text p { font-size: 14px; }
     .visual { top: 140px; }
-    #v-browser > .mock { left: 20px; scale: 0.8; }
+    #v-browser > .mock { left: 20px; scale: 0.8; width: 400px; }
     #v-deploy > .mock { left: 16px; scale: 0.74; }
     #v-chat > .mock { left: 12px; top: 4px; scale: 0.74; }
     #v-launch > .device, #v-mail > .device { scale: 1.05; }
@@ -518,7 +520,7 @@
   .to { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 6px; border-radius: 8px; box-shadow: 0 0 0 1px var(--hairline); }
   .chip { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px 0 2px; border-radius: 12px; background: var(--code-bg); color: var(--text); }
   .chip .avatar { width: 20px; height: 20px; font-size: 8.5px; }
-  .compose .actions { justify-content: space-between; align-items: center; }
+  .compose .actions { justify-content: space-between; align-items: center; gap: 12px; }
   .expiry { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; }
   .project { display: flex; align-items: center; gap: 10px; }
   .project-mark { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: linear-gradient(135deg, oklch(0.72 0.14 40), oklch(0.6 0.16 15)); color: oklch(1 0 0); font-weight: 700; font-size: 13px; }
@@ -576,7 +578,7 @@
   .splash .wordmark { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
   .splash .tagline { color: var(--muted); font-size: 11.5px; }
 
-  .mail { cursor: grab; touch-action: none; }
+  .mail { cursor: grab; touch-action: pan-y; }
   .mail:active { cursor: grabbing; }
   .mail-nav { position: relative; z-index: 1; display: flex; justify-content: space-between; padding: 2px 16px 0; color: var(--accent); background: var(--win-bg); }
   .mail-nav span { display: flex; align-items: center; gap: 2px; }
@@ -712,10 +714,10 @@
   .dash-title h4 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
   .dash-title p { margin: 2px 0 0; color: var(--muted); }
   .current-card { display: grid; grid-template-columns: 230px 1fr; gap: 20px; max-width: 900px; padding: 16px; border-radius: 12px; background: var(--win-bg); box-shadow: 0 0 0 1px var(--hairline), 0 1px 2px oklch(0 0 0 / 0.04); }
-  .preview { position: relative; aspect-ratio: 16 / 10; border-radius: 8px; overflow: hidden; background: var(--photo-bg); box-shadow: 0 0 0 1px var(--hairline); }
-  .preview origami-loader { position: absolute; inset: 0; margin: auto; width: 132px; height: 132px; --ol-bg: var(--photo-bg); }
+  .deploy-preview { position: relative; aspect-ratio: 16 / 10; border-radius: 8px; overflow: hidden; background: var(--photo-bg); box-shadow: 0 0 0 1px var(--hairline); }
+  .deploy-preview origami-loader { position: absolute; inset: 0; margin: auto; width: 132px; height: 132px; --ol-bg: var(--photo-bg); }
   .site-shot { position: absolute; inset: 0; padding: 12px 14px; display: grid; align-content: start; gap: 7px; background: oklch(0.99 0.004 60); opacity: 0; transition: opacity 300ms ease-out; }
-  .preview.is-ready .site-shot { opacity: 1; }
+  .deploy-preview.is-ready .site-shot { opacity: 1; }
   .site-shot i { display: block; border-radius: 3px; background: oklch(0.9 0.008 60); }
   .site-shot .bar { height: 8px; width: 100%; margin-bottom: 8px; }
   .site-shot .h { height: 14px; width: 62%; background: oklch(0.3 0.01 60); }
@@ -1111,7 +1113,7 @@
                 <div class="file-row"><span class="doc">PDF</span><span><span style="display:block">Spring catalogue.pdf</span><span class="muted tabular">4.2 MB · 14 pages</span></span></div>
                 <div class="field">To<div class="to"><span class="chip"><span class="avatar" style="--hue: 250">MC</span>Maya Chen</span><span class="muted">maya@studio.co</span></div></div>
                 <label class="field">Message<input type="text" value="Final version, with the new samples." tabindex="-1" readonly></label>
-                <div class="actions"><span class="muted expiry"><svg class="icon small"><use href="#i-clock"/></svg>Link expires in 7 days</span><button class="primary" type="button" id="tx-send">Send</button></div>
+                <div class="actions"><span class="muted expiry"><svg class="icon small"><use href="#i-clock"/></svg>Expires in 7 days</span><button class="primary" type="button" id="tx-send">Send</button></div>
               </div>
               <div class="pane sending" id="tx-sending">
                 <origami-loader model="plane" look="paper" id="tx-loader" progress="0" style="--ol-front: oklch(0.58 0.12 250); --ol-back: oklch(0.98 0.004 250)" aria-label="Sending Spring catalogue.pdf"></origami-loader>
@@ -1146,7 +1148,7 @@
             <div class="dash-main">
               <div class="dash-title"><div><h4>Production deployment</h4><p>The deployment that is live on acme.dev.</p></div><button class="primary" type="button" id="redeploy">Redeploy</button></div>
               <div class="current-card">
-                <div class="preview" id="deploy-preview">
+                <div class="deploy-preview" id="deploy-preview">
                   <div class="site-shot" aria-hidden="true"><i class="bar"></i><i class="h"></i><i class="p"></i><i class="cta"></i><span><i></i><i></i><i></i></span></div>
                   <origami-loader model="boat" id="deploy-loader" look="paper" progress="0" texture="none" style="--ol-front: oklch(0.6 0.13 250); --ol-back: oklch(0.97 0.01 250)" aria-label="Deployment in progress"></origami-loader>
                 </div>
@@ -1447,8 +1449,9 @@
       refreshing = false;
     }, 320);
   });
+  // Mouse and pen: drag the inbox down. Touch is handled below, so the page still scrolls.
   mail.addEventListener('pointerdown', function (e) {
-    if (refreshing) return;
+    if (refreshing || e.pointerType === 'touch') return;
     startY = e.clientY;
     mailScroll.classList.add('held');
     mail.setPointerCapture(e.pointerId);
@@ -1462,6 +1465,30 @@
   }
   mail.addEventListener('pointerup', release);
   mail.addEventListener('pointercancel', release);
+  // Touch: only a downward pull belongs to the inbox, as in a real app; anything else scrolls the page.
+  var touch = null;
+  mail.addEventListener('touchstart', function (e) {
+    if (refreshing || e.touches.length !== 1) { touch = null; return; }
+    touch = { x: e.touches[0].clientX, y: e.touches[0].clientY, pulling: null };
+  }, { passive: true });
+  mail.addEventListener('touchmove', function (e) {
+    if (!touch) return;
+    var dx = e.touches[0].clientX - touch.x, dy = e.touches[0].clientY - touch.y;
+    if (touch.pulling === null) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      touch.pulling = dy > 0 && dy > Math.abs(dx);
+      if (touch.pulling) { startY = touch.y; mailScroll.classList.add('held'); }
+    }
+    if (!touch.pulling) return;
+    e.preventDefault();
+    setPull(dy);
+  }, { passive: false });
+  function touchDone() {
+    if (touch && touch.pulling) release();
+    touch = null;
+  }
+  mail.addEventListener('touchend', touchDone);
+  mail.addEventListener('touchcancel', touchDone);
   mail.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPull(THRESHOLD); refresh(); }
   });
