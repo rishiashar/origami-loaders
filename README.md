@@ -98,7 +98,7 @@ el.restart(); // or set progress again to fold a fresh sheet
 | `envelope` | Four corners to the centre, so progress maps neatly: a quarter of the work, one corner. |
 | `boat` | A sailboat in three folds. Rocks on the water, then sails off. |
 | `frog` | The traditional jumping frog, from a waterbomb base. The back legs are a squash fold, and its pleat is a spring: it hops twice, then hops away. |
-| `swan` | Kite, neck, head. Drifts on the water, then glides off. |
+| `swan` | The traditional swan: a kite, folded in half, then the neck and head are pulled up into place. Drifts on the water, then glides off. |
 | `heart` | The classic heart, folded on the side you see. It beats. |
 | `whale` | The traditional whale, from a fish base: the rabbit ears become its flippers. Swims, flicks its tail, then dives. |
 | `fox` | A fox's face. Tilts its head and twitches its ears. |
@@ -129,7 +129,8 @@ The paper crane folds through all 14 steps of the classic diagram, about 25 seco
 - [x] A fold check in the test suite that catches the wrong layer showing, folds that undo themselves, and torn creases
 - [ ] Static SVG export for no-JS / `<img>` use
 - [x] Paper look: models can start coloured side down, as real ones do, so the plane and envelope fold the colour out
-- [x] Reverse folds are real: the point is mirrored across its crease and stays joined to it (the crane's neck, tail and head, the swan's neck and head, the whale's tail)
+- [x] No crease ever comes apart: the swan's neck and head are pulled up the way paper moves, and the whale's tail is a plain mountain fold
+- [ ] Paper that bends. The crane's neck, tail and head are inside reverse folds, which paper can only make by bending. Flat faces cannot do that, so on those three steps the point's crease opens for a moment before it lands
 - [x] The crane shows only its coloured side, wings included, as a crane folded from one-sided paper does
 
 ## How it works
@@ -137,18 +138,18 @@ The paper crane folds through all 14 steps of the classic diagram, about 25 seco
 A model is written the way origami is taught: one fold at a time, against the paper as it currently lies (`src/models/crane.ts`).
 
 1. **Folds cut the paper.** Each fold splits the faces it passes through along the fold line, so the crease pattern builds itself (`src/fold.ts`).
-2. **Joints move the faces.** A hinge rotates faces about a fold line; joints chain, so a flap can fold while it is being lifted. A **reverse fold** mirrors the point across its crease, so it turns inside out and stays joined along the crease, tucked between the layers (inside) or wrapped round them (outside). It gets there the way fingers move it: it swings round and turns over about its own spine, opening like a book.
+2. **Joints move the faces.** A hinge rotates faces about a fold line; joints chain, so a flap can fold while it is being lifted. A **pull** (the swan's neck and head) is worked out exactly: the crease at the point's base swings round, the wedge of paper between the old crease and the new one turns over, and the point unfolds about the old crease by whatever keeps its spine between the two sides, so nothing comes apart on the way. A **reverse fold** (the crane's neck, tail and head) mirrors the point across its crease, tucked between the layers. Real paper bends to get there; flat faces cannot, so the point rolls over and swings round, and its crease is open until it lands.
 3. **Compound folds are solved.** The square base and the petal folds move several creases at once. Those angles are left free, `pin` says which corners must stay together, and a small Gauss–Newton solver works out the angles along the whole motion so the paper never tears. Some are worked out exactly instead. In the frog's waterbomb base, as each side triangle turns in by θ, the top comes down by γ = 2·atan(tan(θ/2)/√2). In its squash, the bottom rises in front, each side flap's middle triangle turns over just fast enough to keep its two creases 45° apart, and the lower triangle swings out between them. The whale's rabbit ears are tracked numerically so the two halves of each ear meet back to back.
 4. **Layers are tracked.** After every step the engine works out which face ended up on top wherever two overlap, and gives every face a layer height, so flat stacks have real thickness. Paper that stands up, like a crane's spread wings, keeps its stacking turned with it.
 5. **Rendering.** Faces are projected with a perspective camera and shaded by how they face a light. Faces lying flat together are drawn as one panel and painted back-to-front with plane tests and a topological sort; where no plane separates two panels, the one nearer the eye where they actually overlap goes on top (`src/scene.ts`).
 6. **Paper.** Paper Shaders' paper-texture shader renders the grain once per page on a hidden WebGL canvas; the result is baked into an image that each panel maps in sheet space, so the grain folds with the paper (`src/paper-shader.ts`, with a small CPU fallback in `src/texture.ts`).
 7. **Looks are CSS** (`src/styles.ts`). The paper look colours the front of the sheet; a model compiled with `colourDown` starts with the front facing away, the way you fold coloured paper, so the folds bring the colour out.
 
-The crane compiles in about 50 ms on first use. A frame costs about 1 ms of script. The whole package, all ten models included, is about 21 kB gzipped.
+The crane compiles in about 50 ms on first use. A frame costs about 1 ms of script. The whole package, all ten models included, is about 22 kB gzipped.
 
 ## Development
 
-`npm test` also runs a fold check over every model (`test/inspect.ts`, under a second). At several moments in every step it lays the frame out exactly as the renderer does and fails if a farther layer is painted over a nearer one (the wrong side of the paper showing), if a face rides folds that undo each other, or if a crease tears. A reverse fold may open its crease on the way, but it must be shut again by the end of the step.
+`npm test` also runs a fold check over every model (`test/inspect.ts`, under a second). At several moments in every step it lays the frame out exactly as the renderer does and fails if a farther layer is painted over a nearer one (the wrong side of the paper showing), if a face rides folds that undo each other, or if any crease comes apart at any of 40 moments in the step. The only steps let off are the crane's three reverse folds, named in `BENDS`, where only the end counts.
 
 ```sh
 npm install

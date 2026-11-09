@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `swan` folds the way paper does. The tip folds back for the head before the model folds in half; then the neck is pulled up and the head after it, as origami.me teaches. Each pull is worked out exactly: the crease at the base swings round and the chest folds with it, so the neck never comes loose from the body.
+- `whale` folds its tail with a plain mountain fold, as origami.me does, and flicks it by opening that fold a little.
+- The fold check is stricter: every crease of every model is checked at 40 moments of every step. Only the crane's three reverse folds are let off, because paper has to bend to make them.
 - `frog` folds the way origami.me teaches it. After the front legs, the bottom folds up and the sides fold in. Then the bottom is pushed up and its side flaps squash out to become real back legs. The bottom then folds up and back down in half for the spring. The finished frog sits side-on and pitches nose-up as it hops.
 
 ## 0.1.1
