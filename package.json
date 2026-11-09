@@ -1,7 +1,7 @@
 {
   "name": "origami-loaders",
   "version": "0.1.0",
-  "description": "A paper crane that folds itself. 3D origami loaders as live SVG, zero dependencies.",
+  "description": "Loaders that fold: ten 3D origami models, from a paper crane to a jumping frog, as live SVG. One web component, zero dependencies.",
   "type": "module",
   "license": "MIT",
   "keywords": [
@@ -41,6 +41,7 @@
   "jsdelivr": "dist/origami-loaders.iife.js",
   "files": [
     "dist",
+    "CHANGELOG.md",
     "THIRD_PARTY_NOTICES.txt"
   ],
   "sideEffects": true,

@@ -10,7 +10,7 @@ A framework-agnostic web component: drop `<origami-loader>` into any page, React
 npm i origami-loaders
 ```
 
-With a bundler, import the package once. It registers the `<origami-loader>` element as a side effect. The `OrigamiLoader` class is also exported.
+With a bundler, import the package once. It registers the `<origami-loader>` element as a side effect. The `OrigamiLoader` class is also exported. It is safe to import during server rendering (Next.js, Nuxt, SvelteKit, Astro): the element registers only once the page runs in a browser.
 
 ```js
 import 'origami-loaders';
@@ -142,7 +142,7 @@ A model is written the way origami is taught: one fold at a time, against the pa
 6. **Paper.** Paper Shaders' paper-texture shader renders the grain once per page on a hidden WebGL canvas; the result is baked into an image that each panel maps in sheet space, so the grain folds with the paper (`src/paper-shader.ts`, with a small CPU fallback in `src/texture.ts`).
 7. **Looks are CSS** (`src/styles.ts`). The paper look colours the front of the sheet; a model compiled with `colourDown` starts with the front facing away, the way you fold coloured paper, so the folds bring the colour out.
 
-The crane compiles in about 50 ms on first use. A frame costs about 1 ms of script. The whole package, all ten models included, is about 20 kB gzipped.
+The crane compiles in about 50 ms on first use. A frame costs about 1 ms of script. The whole package, all ten models included, is about 21 kB gzipped.
 
 ## Development
 
@@ -159,21 +159,42 @@ npm run capture    # screenshots + video of the demo (needs Playwright and ffmpe
 
 ## Releasing
 
-Publishing runs in GitHub Actions when a `v*` tag is pushed (`.github/workflows/publish.yml`). It typechecks, tests, builds, checks the tag against the version in `package.json`, then runs `npm publish --provenance`.
+Publishing runs in GitHub Actions when a `v*` tag is pushed (`.github/workflows/publish.yml`). It typechecks, tests, builds, checks the tag against the version in `package.json`, then publishes with provenance: a signed record on npm of the commit and workflow that built the package. What changed in each version is in `CHANGELOG.md`.
 
-One-time setup:
+### The first release, with a token
 
-1. On npmjs.com, create an access token. A granular token with read and write access to this package works, as does an automation token. For the first release the package does not exist yet, so the granular token needs to cover new packages or use an automation token.
+The package does not exist on npm until the first release, so that one release uses a token.
+
+1. On npmjs.com, go to Access Tokens and generate a granular access token:
+   - **Bypass two-factor authentication** ticked, so the workflow can publish without a code from your phone.
+   - Packages and scopes: **Read and write (publish and stage)** on **All Packages**. The package cannot be picked by name until it exists.
+   - Expiration: 7 days. It is only needed once.
 2. In the GitHub repo, go to Settings, Secrets and variables, Actions, and add the token as a repository secret named `NPM_TOKEN`.
+3. Tag the release commit on `main` and push the tag:
 
-For each release:
+   ```sh
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
 
-```sh
-npm version 0.1.1 --no-git-tag-version   # or edit package.json by hand
-git commit -am "Release v0.1.1"
-git tag v0.1.1
-git push && git push --tags
-```
+4. Follow the Publish run in the repo's Actions tab. When it is green, the package is at npmjs.com/package/origami-loaders.
+5. Delete the `NPM_TOKEN` secret and revoke the token on npmjs.com. It has done its job.
+
+### Every release after, with no token
+
+From then on, npm trusts this repo's publish workflow directly (trusted publishing), so no token is stored anywhere. npm stops letting tokens publish directly in January 2027, so this is the way to release from then on. The workflow needs no change: npm tries trusted publishing first and falls back to a token only when there is one.
+
+1. On npmjs.com, open the package's Settings, find Trusted Publisher, choose GitHub Actions and enter `rishiashar`, `origami-loaders` and `publish.yml`. The next publish must happen within 2 days of adding it, or the connection expires and has to be added again, so do this when the next release is ready.
+2. Bump the version, tag it and push:
+
+   ```sh
+   npm version 0.1.1 --no-git-tag-version   # or edit package.json by hand
+   git commit -am "Release v0.1.1"
+   git tag v0.1.1
+   git push && git push --tags
+   ```
+
+3. Once that release is out, go to the package's Settings, Publishing access, and choose **Require two-factor authentication and disallow tokens**, so a leaked token can never publish.
 
 ## Credits
 
