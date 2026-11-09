@@ -5,7 +5,8 @@ import type { P2 } from '../geom';
 /**
  * The traditional whale: a kite with its narrow point as the tail, the wide
  * point folded back for a blunt head, the model folded in half along its belly,
- * and the tail lifted. It swims with a flick of the tail, then dives.
+ * and the tail lifted with an outside reverse fold. It swims with a flick of the
+ * tail, then dives.
  *
  * Sheet coordinates: the diamond with corners (0, ±1) and (±1, 0), coloured side
  * down. The left corner becomes the tail.
@@ -13,8 +14,8 @@ import type { P2 } from '../geom';
 
 const L: P2 = [-1, 0];
 const HEAD = 0.55;     // the wide point folds back along this line
-const TAIL = -0.5;     // where the tail bends up
-const LIFT = -62;      // degrees
+const TAIL = -0.5;     // where the tail's crease starts, on the belly
+const TAIL_DIR = 118;  // which way the lifted tail points (degrees; it lay along the belly at 180)
 const FLICK = -16;
 
 const kite = (σ: number): P2 => {
@@ -48,8 +49,12 @@ export function buildWhale() {
 
   let tail: Face[] = [];
   F.step({ diagram: 5, label: 'Lift the tail', duration: 0.8, ease: 'inOut', pose: { s: 1.5, ty: -0.35, tx: 0.08 } }, (s) => {
-    tail = s.split(s.select((f) => f.flat), [TAIL, -1], [TAIL, 1]).filter((f) => s.info(f).model[0] < TAIL);
-    s.attach(tail, s.swing([TAIL, 0], LIFT, { ease: 'inOut' }));
+    const a = (((180 + TAIL_DIR) / 2) * Math.PI) / 180;
+    const crease: [P2, P2] = [[TAIL, 0], [TAIL + Math.cos(a), Math.sin(a)]];
+    // The crease runs across the tail only: on its far side there is no paper.
+    const end = s.select((f) => f.flat);
+    // Folded in half toward you, the bottom half of the sheet is the front.
+    tail = s.reverse(end, crease, { side: L, axis: [[TAIL, 0], L], front: (f) => f.sheet[1] < 0, kind: 'outside', roll: 'last', book: true });
   });
 
   F.step({ diagram: 5, label: 'Swim', duration: 1.4, ease: 'linear', path: swim }, (s) => {

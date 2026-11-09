@@ -152,7 +152,7 @@ export function layoutFrame(m: Folded, frame: Frame, cam: Camera = defaultCamera
   for (let f = 0; f < nF; f++) {
     const T = frame.T[f];
     nModel[f] = [T[2], T[6], T[10]];
-    W[f] = mul(M, mul(translate(0, 0, frame.z[f]), T));
+    W[f] = mul(M, mul(translate(frame.lift[3 * f], frame.lift[3 * f + 1], frame.lift[3 * f + 2]), T));
     pts[f] = m.faces[f].map((v) => apply(W[f], m.verts[v][0], m.verts[v][1], 0));
     scr[f] = pts[f].map(([x, y, z]) => { const k = D / (D - z); return [x * k, -y * k] as P2; });
   }
@@ -166,7 +166,8 @@ export function layoutFrame(m: Folded, frame: Frame, cam: Camera = defaultCamera
     const [f, g] = e.faces;
     if (dot(nModel[f], nModel[g]) > 1 - 1e-9) {
       flat[i] = 1;
-      if (Math.abs(frame.z[f] - frame.z[g]) < 1e-9) parent[find(f)] = find(g);
+      const L = frame.lift;
+      if (Math.abs(L[3 * f] - L[3 * g]) + Math.abs(L[3 * f + 1] - L[3 * g + 1]) + Math.abs(L[3 * f + 2] - L[3 * g + 2]) < 1e-9) parent[find(f)] = find(g);
     }
   });
   const groups = new Map<number, number[]>();

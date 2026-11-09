@@ -95,7 +95,7 @@ el.restart(); // or set progress again to fold a fresh sheet
 | `pleat` | An accordion that breathes. Made for "thinking" and other waits with no end in sight. |
 | `envelope` | Four corners to the centre, so progress maps neatly: a quarter of the work, one corner. |
 | `boat` | A sailboat in three folds. Rocks on the water, then sails off. |
-| `frog` | A frog's face. Hops twice, then hops away. |
+| `frog` | The traditional jumping frog, from a waterbomb base. Its pleat is a spring: it hops twice, then hops away. |
 | `swan` | Kite, neck, head. Drifts on the water, then glides off. |
 | `heart` | The classic heart, folded on the side you see. It beats. |
 | `whale` | A kite with its tail lifted. Swims, flicks its tail, dives. |
@@ -127,25 +127,26 @@ The paper crane folds through all 14 steps of the classic diagram, about 25 seco
 - [x] A fold check in the test suite that catches the wrong layer showing, folds that undo themselves, and torn creases
 - [ ] Static SVG export for no-JS / `<img>` use
 - [x] Paper look: models can start coloured side down, as real ones do, so the plane and envelope fold the colour out
-- [ ] Paper look: the crane's wing tops should show the coloured side
+- [x] Reverse folds are real: the point is mirrored across its crease and stays joined to it (the crane's neck, tail and head, the swan's neck and head, the whale's tail)
+- [x] The crane shows only its coloured side, wings included, as a crane folded from one-sided paper does
 
 ## How it works
 
 A model is written the way origami is taught: one fold at a time, against the paper as it currently lies (`src/models/crane.ts`).
 
 1. **Folds cut the paper.** Each fold splits the faces it passes through along the fold line, so the crease pattern builds itself (`src/fold.ts`).
-2. **Joints move the faces.** A hinge rotates faces about a fold line; a swing turns them in the plane (for reverse folds); joints chain, so a flap can fold while it is being lifted.
-3. **Compound folds are solved.** The square base and the petal folds move several creases at once. Those angles are left free, `pin` says which corners must stay together, and a small Gauss–Newton solver works out the angles along the whole motion so the paper never tears.
-4. **Layers are tracked.** After every step the engine works out which face ended up on top wherever two overlap, and gives every face a layer height, so flat stacks have real thickness.
+2. **Joints move the faces.** A hinge rotates faces about a fold line; joints chain, so a flap can fold while it is being lifted. A **reverse fold** mirrors the point across its crease, so it turns inside out and stays joined along the crease, tucked between the layers (inside) or wrapped round them (outside). It gets there the way fingers move it: it swings round and turns over about its own spine, opening like a book.
+3. **Compound folds are solved.** The square base and the petal folds move several creases at once. Those angles are left free, `pin` says which corners must stay together, and a small Gauss–Newton solver works out the angles along the whole motion so the paper never tears. The frog's waterbomb base is worked out exactly instead: as each side triangle turns in by θ, the top comes down by γ = 2·atan(tan(θ/2)/√2).
+4. **Layers are tracked.** After every step the engine works out which face ended up on top wherever two overlap, and gives every face a layer height, so flat stacks have real thickness. Paper that stands up, like a crane's spread wings, keeps its stacking turned with it.
 5. **Rendering.** Faces are projected with a perspective camera and shaded by how they face a light. Faces lying flat together are drawn as one panel and painted back-to-front with plane tests and a topological sort; where no plane separates two panels, the one nearer the eye where they actually overlap goes on top (`src/scene.ts`).
 6. **Paper.** Paper Shaders' paper-texture shader renders the grain once per page on a hidden WebGL canvas; the result is baked into an image that each panel maps in sheet space, so the grain folds with the paper (`src/paper-shader.ts`, with a small CPU fallback in `src/texture.ts`).
 7. **Looks are CSS** (`src/styles.ts`). The paper look colours the front of the sheet; a model compiled with `colourDown` starts with the front facing away, the way you fold coloured paper, so the folds bring the colour out.
 
-The crane compiles in about 50 ms on first use. A frame costs about 1 ms of script. The whole package, all ten models included, is about 17 kB gzipped.
+The crane compiles in about 50 ms on first use. A frame costs about 1 ms of script. The whole package, all ten models included, is about 20 kB gzipped.
 
 ## Development
 
-`npm test` also runs a fold check over every model (`test/inspect.ts`, under a second). At several moments in every step it lays the frame out exactly as the renderer does and fails if a farther layer is painted over a nearer one (the wrong side of the paper showing), if a face rides folds that undo each other, or if a crease tears.
+`npm test` also runs a fold check over every model (`test/inspect.ts`, under a second). At several moments in every step it lays the frame out exactly as the renderer does and fails if a farther layer is painted over a nearer one (the wrong side of the paper showing), if a face rides folds that undo each other, or if a crease tears. A reverse fold may open its crease on the way, but it must be shut again by the end of the step.
 
 ```sh
 npm install

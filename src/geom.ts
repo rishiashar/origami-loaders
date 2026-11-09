@@ -4,6 +4,15 @@ export type P2 = [number, number];
 /** Twice the signed area of triangle o-a-b; > 0 when b is left of o→a. */
 export const side = (o: P2, a: P2, p: P2) => (a[0] - o[0]) * (p[1] - o[1]) - (a[1] - o[1]) * (p[0] - o[0]);
 
+/** Where the line a→b meets the line c→d, or undefined if they are parallel. */
+export function intersect(a: P2, b: P2, c: P2, d: P2): P2 | undefined {
+  const r = [b[0] - a[0], b[1] - a[1]], s = [d[0] - c[0], d[1] - c[1]];
+  const den = r[0] * s[1] - r[1] * s[0];
+  if (Math.abs(den) < 1e-12) return undefined;
+  const t = ((c[0] - a[0]) * s[1] - (c[1] - a[1]) * s[0]) / den;
+  return [a[0] + r[0] * t, a[1] + r[1] * t];
+}
+
 export function signedArea(poly: P2[]): number {
   let a = 0;
   for (let i = 0; i < poly.length; i++) {

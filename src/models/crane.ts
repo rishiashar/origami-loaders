@@ -31,7 +31,20 @@ const yWing = (() => {
   const s = ((XR[0] - B0[0]) * e[1] - (XR[1] - B0[1]) * e[0]) / den;
   return B0[1] + d[1] * s;
 })();
-const yReverse = yw - 0.03;
+/** Where the legs meet the body. */
+const yLeg = 0.263;
+/** The reverse-fold crease across each leg slopes this much (radians): the neck rises at about 54°. */
+const NECK_SLOPE = (18 * Math.PI) / 180;
+/** The head: how far from the tip of the neck, and the way it points (radians from +x). */
+const HEAD = 0.19;
+const HEAD_DIR = (-28 * Math.PI) / 180;
+
+/** Mirror image of p across the line a→b. */
+function mirror(p: P2, [a, b]: [P2, P2]): P2 {
+  const d = [b[0] - a[0], b[1] - a[1]];
+  const t = ((p[0] - a[0]) * d[0] + (p[1] - a[1]) * d[1]) / (d[0] * d[0] + d[1] * d[1]);
+  return [2 * (a[0] + d[0] * t) - p[0], 2 * (a[1] + d[1] * t) - p[1]];
+}
 
 // Regions of the sheet, by face centroid.
 const TR = ([u, v]: P2) => u > 0 && v > 0;
@@ -156,25 +169,24 @@ export function buildCrane() {
   F.step({ diagram: 9, label: 'Turn over', duration: 0.8, ease: 'inOut', pose: { ry: 552 }, arc: { tz: 0.3 } });
   narrowSide(-1, 9, 'Narrow the other side');
 
-  // Reverse folds: each leg swings up between the layers of the body.
+  // Inside reverse folds, as on the real crane: each leg is mirrored up across a crease
+  // where it meets the body, so it turns inside out and rises between the body's layers.
   const front = sheet((p) => topQ(p) || rightQ(p));
-  const back = sheet((p) => leftQ(p) || bottomQ(p));
-  let neck: Face[] = [];
-  const reverse = (diagram: number, label: string, quadrant: (p: P2) => boolean, deg: number) => {
+  /** The leg below the waist, from its tip to the middle of its top. */
+  const legAxis = (σ: number): [P2, P2] => [B0, [σ * 0.097, yLeg]];
+  const legCrease = (σ: number): [P2, P2] => [[0, yLeg], [σ * Math.cos(NECK_SLOPE), yLeg - Math.sin(NECK_SLOPE)]];
+  const reverseLeg = (diagram: number, label: string, quadrant: (p: P2) => boolean, σ: number) => {
     let moved: Face[] = [];
-    F.step({ diagram, label, duration: 0.95, ease: 'inOut', pose: { s: 1.45, ty: -0.95 } }, (s) => {
-      const leg = s.split(s.select((f) => quadrant(f.sheet) && f.flat), [-1, yReverse], [1, yReverse]);
-      moved = leg.filter((f) => s.info(f).model[1] < yReverse);
-      s.attach(moved, s.swing([0, yReverse], deg, { ease: 'inOut' }));
-      const legSet = new Set(moved);
-      const rest = (fl: Filter) => s.select(fl).filter((f) => !legSet.has(f));
-      s.layer(rest(front), moved);
-      s.layer(moved, rest(back));
+    F.step({ diagram, label, duration: 1.0, ease: 'inOut', pose: { s: 1.45, ty: -0.95 } }, (s) => {
+      moved = s.reverse(s.select((f) => quadrant(f.sheet) && f.flat && f.model[1] < yLeg), legCrease(σ), { side: B0, axis: legAxis(σ), front, kind: 'inside' });
     });
-    return moved;
+    return () => moved;
   };
-  neck = reverse(10, 'Reverse fold the neck up', TL, 150);
-  reverse(11, 'Reverse fold the tail up', BR, -150);
+  const neck = reverseLeg(10, 'Reverse fold the neck up', TL, 1);
+  reverseLeg(11, 'Reverse fold the tail up', BR, -1);
+  // Where the neck ended up: its tip and axis, mirrored across the crease.
+  const neckTip = mirror(B0, legCrease(1));
+  const neckBase = mirror(legAxis(1)[1], legCrease(1));
 
   let wingF: Face[] = [], wingB: Face[] = [];
   const wingA: P2 = [-1, yWing], wingB2: P2 = [1, yWing], tip: P2 = [0, 1.2];
@@ -183,26 +195,15 @@ export function buildCrane() {
     wingB = s.fold(wingA, wingB2, { where: sheet((p) => BL(p) && p[0] + p[1] < Math.SQRT2 - 2), side: tip, toward: -1, at: [0.3, 1] });
   });
 
-  // Head: the tip of the neck reverse-folds forward.
+  // Head: a small inside reverse fold near the tip of the neck, mirrored so it points forward and a little down.
   F.step({ diagram: 13, label: 'Reverse fold the head', duration: 0.8, ease: 'inOut' }, (s) => {
-    const a = (150 * Math.PI) / 180;
-    const pivot: P2 = [0, yReverse];
-    const len = yReverse + h;
-    const dir: P2 = [Math.sin(a), -Math.cos(a)];
-    const tipN: P2 = [pivot[0] + dir[0] * len, pivot[1] + dir[1] * len];
-    const hp: P2 = [tipN[0] - dir[0] * 0.2, tipN[1] - dir[1] * 0.2];
-    const across: P2 = [hp[0] - dir[1], hp[1] + dir[0]];
-    const parts = s.split(neck.filter((f) => s.info(f).flat), hp, across);
-    const head = parts.filter((f) => {
-      const m = s.info(f).model;
-      return (m[0] - hp[0]) * dir[0] + (m[1] - hp[1]) * dir[1] > 0;
-    });
-    s.attach(head, s.swing(hp, -115, { ease: 'inOut' }));
-    const headSet = new Set(head);
-    const neckRest = parts.filter((f) => !headSet.has(f));
-    const nf = neckRest.filter((f) => topQ(s.info(f).sheet)), nb = neckRest.filter((f) => leftQ(s.info(f).sheet));
-    s.layer(nf, head);
-    s.layer(head, nb);
+    const dx = neckTip[0] - neckBase[0], dy = neckTip[1] - neckBase[1];
+    const len = Math.hypot(dx, dy);
+    const dir = Math.atan2(dy, dx);
+    const at: P2 = [neckTip[0] - (dx / len) * HEAD, neckTip[1] - (dy / len) * HEAD];
+    const lineAngle = (dir + HEAD_DIR) / 2;
+    const crease: [P2, P2] = [at, [at[0] + Math.cos(lineAngle), at[1] + Math.sin(lineAngle)]];
+    s.reverse(neck(), crease, { side: neckTip, axis: [neckBase, neckTip], front, kind: 'inside' });
   });
 
   F.step({ diagram: 14, label: 'Spread the wings', duration: 1.5, ease: 'inOut', pose: { ry: 585, rx: -14, s: 1.7, ty: -0.9 } }, (s) => {

@@ -954,7 +954,7 @@
         <button type="button" data-model="pleat" data-note="An accordion that breathes, for waits with no end in sight." aria-pressed="false"><origami-loader model="pleat" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Pleat</button>
         <button type="button" data-model="envelope" data-note="Four corners to the centre: a quarter of the work, one corner." aria-pressed="false"><origami-loader model="envelope" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Envelope</button>
         <button type="button" data-model="boat" data-note="A sailboat in three folds. Rocks on the water, then sails off." aria-pressed="false"><origami-loader model="boat" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Boat</button>
-        <button type="button" data-model="frog" data-note="A frog’s face. Hops twice, then hops away." aria-pressed="false"><origami-loader model="frog" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Frog</button>
+        <button type="button" data-model="frog" data-note="The traditional jumping frog. Its pleat is a spring: it hops twice, then hops away." aria-pressed="false"><origami-loader model="frog" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Frog</button>
         <button type="button" data-model="swan" data-note="Kite, neck, head. Drifts on the water, then glides off." aria-pressed="false"><origami-loader model="swan" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Swan</button>
         <button type="button" data-model="heart" data-note="The classic heart, folded on the side you see. It beats." aria-pressed="false"><origami-loader model="heart" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Heart</button>
         <button type="button" data-model="whale" data-note="A kite with its tail lifted. Swims, flicks its tail, dives." aria-pressed="false"><origami-loader model="whale" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Whale</button>
@@ -1387,7 +1387,7 @@
     <div class="prose">
       <p>Size it with CSS <code>width</code> and <code>height</code>. It stops drawing while it is off screen, and people who prefer reduced motion see the finished model, still.</p>
       <p>It is a <code>role="progressbar"</code>, so give it an <code>aria-label</code> that says what is loading.</p>
-      <p>Each model is real paper geometry: folds cut the sheet, the engine tracks every layer, and the paper grain folds with the paper. About 17 kB gzipped with all ten models, and the texture loads on its own.</p>
+      <p>Each model is real paper geometry: folds cut the sheet, the engine tracks every layer, and the paper grain folds with the paper. About 20 kB gzipped with all ten models, and the texture loads on its own.</p>
     </div>
   </section>
 
@@ -1902,11 +1902,18 @@
     a.querySelector('.post-foot').appendChild(document.createTextNode(d[5]));
     return a;
   }
+  // Start on the frog's first hop: by then it is folded and sitting on its spring.
+  function hopStart() {
+    var m = frog.player && frog.player.model;
+    if (!m) return 0;
+    for (var k = 0; k < m.steps.length; k++) if (m.steps[k].label === 'Hop') return m.starts[k];
+    return 0;
+  }
   function loadMore() {
     if (loadingMore) return;
     loadingMore = true;
     feedMore.classList.add('on');
-    frog.seek(4.2);
+    frog.seek(hopStart());
     frog.removeAttribute('paused');
     setTimeout(function () {
       for (var k = 0; k < 2; k++) feedList.insertBefore(postEl(nextPosts[nextPost++ % nextPosts.length]), feedMore);

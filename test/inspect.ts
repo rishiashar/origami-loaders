@@ -8,8 +8,9 @@
  *   over the nearer one, so the wrong side or layer of the paper shows.
  * - cancel: a face rides joints that undo each other within one step. That is
  *   almost always a fold line running on into a flap it was not meant for.
- * - tear:  two faces that share a crease drift apart (skipped for in-plane
- *   swings, which approximate reverse folds).
+ * - tear:  two faces that share a crease drift apart. A reverse fold opens
+ *   its crease on the way (the point rolls over, then swings round), so in a
+ *   step with a swing only the end counts: by then every crease must be shut.
  */
 import { apply, mul, type Mat, type Vec3 } from '../src/math';
 import { ccw, centroid, clipConvex, signedArea, type P2 } from '../src/geom';
@@ -52,8 +53,6 @@ export function inspect(m: Folded, moments = MOMENTS): Issue[] {
   const player = new Player(m);
   const issues: Issue[] = [];
   const D = defaultCamera.distance;
-  /** Creases a swing has already pulled apart on purpose; ignored from then on. */
-  const approximated = new Set<number>();
   const edgeGap = (T: Mat[], i: number) => {
     const e = m.edges[i];
     let gap = 0;
@@ -122,11 +121,11 @@ export function inspect(m: Folded, moments = MOMENTS): Issue[] {
       }
 
       // Tearing.
+      if (swings && u < moments[moments.length - 1]) continue;
       let gap = 0, at = -1;
       m.edges.forEach((e, i) => {
-        if (e.faces.length < 2 || approximated.has(i)) return;
+        if (e.faces.length < 2) return;
         const g = edgeGap(frame.T, i);
-        if (swings) { if (g > 2e-3) approximated.add(i); return; }
         if (g > gap) { gap = g; at = i; }
       });
       if (gap > 2e-3) issues.push({ kind: 'tear', step: k, label: step.label, at: u, detail: `crease ${at} opens by ${gap.toFixed(4)}` });

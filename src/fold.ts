@@ -1,5 +1,5 @@
 import { DEG, apply, identity, mul, normalize, rotation, translate, type Mat, type Vec3 } from './math';
-import { ccw, centroid, clipConvex, side, signedArea, splitConvex, type P2 } from './geom';
+import { ccw, centroid, clipConvex, intersect, side, signedArea, splitConvex, type P2 } from './geom';
 import { defaultPose, eases, type EaseName, type Pose } from './motion';
 
 /**
@@ -36,6 +36,8 @@ export interface Joint {
   /** Portion of the step this joint moves in. */
   at: [number, number];
   ease: EaseName;
+  /** Angle (radians) as a function of the joint's own progress, for motions worked out exactly. */
+  script?: (d: number) => number;
 }
 
 export interface StepMeta {
@@ -58,6 +60,8 @@ export interface StepMeta {
 
 export interface Step extends StepMeta {
   joints: Joint[];
+  /** When, within the step, the paper's layers trade places (default: across the whole step). */
+  restack?: [number, number];
   /** Solved angles per free variable, sampled evenly over the step's progress. */
   table: Float64Array[];
 }
@@ -108,7 +112,7 @@ export type Face = Readonly<Sim>;
 
 export function jointMatrix(j: Joint, d: number, free: number): Mat {
   if (!j.rot) return translate(j.u[0] * d, j.u[1] * d, j.u[2] * d);
-  return rotation(j.p, j.u, j.free >= 0 ? free : j.angle * d);
+  return rotation(j.p, j.u, j.free >= 0 ? free : j.script ? j.script(d) : j.angle * d);
 }
 
 function invRigid(T: Mat): Mat {
@@ -292,6 +296,7 @@ export class StepBuilder {
   private pins: { a: Sim; b: Sim; pt: P2 }[] = [];
   private layers: { above: Sim[]; below: Sim[] }[] = [];
   private nFree = 0;
+  private restack?: [number, number];
 
   constructor(private F: Folder, private meta: StepMeta) {}
 
@@ -336,8 +341,11 @@ export class StepBuilder {
     return out;
   }
 
-  /** A rotation about the axis a→b (right-handed), by `deg`, or a solved angle. */
-  rot(a: P2 | Vec3, b: P2 | Vec3, deg: number | 'free', o: { at?: [number, number]; ease?: EaseName; free?: number } = {}): number {
+  /**
+   * A rotation about the axis a→b (right-handed): by `deg`, by a solved angle, or by
+   * an angle in degrees worked out for every moment of the step, `(d) => deg` with d from 0 to 1.
+   */
+  rot(a: P2 | Vec3, b: P2 | Vec3, deg: number | 'free' | ((d: number) => number), o: { at?: [number, number]; ease?: EaseName; free?: number } = {}): number {
     const p: Vec3 = [a[0], a[1], a[2] ?? 0];
     const q: Vec3 = [b[0], b[1], b[2] ?? 0];
     let free = -1;
@@ -345,10 +353,11 @@ export class StepBuilder {
       free = o.free ?? this.nFree;
       this.nFree = Math.max(this.nFree, free + 1);
     }
+    const script = typeof deg === 'function' ? (d: number) => deg(d) * DEG : undefined;
     this.joints.push({
       rot: true, p, u: normalize([q[0] - p[0], q[1] - p[1], q[2] - p[2]]),
-      angle: deg === 'free' ? 0 : deg * DEG, free,
-      at: o.at ?? [0, 1], ease: o.ease ?? 'fold',
+      angle: typeof deg === 'number' ? deg * DEG : script ? script(1) : 0, free,
+      at: o.at ?? [0, 1], ease: script ? 'linear' : o.ease ?? 'fold', script,
     });
     return this.joints.length - 1;
   }
@@ -361,6 +370,80 @@ export class StepBuilder {
   /** An in-plane swing about a point (used for reverse folds). Positive = counter-clockwise. */
   swing(pivot: P2, deg: number, o: { at?: [number, number]; ease?: EaseName } = {}): number {
     return this.rot([pivot[0], pivot[1], 0], [pivot[0], pivot[1], 1], deg, o);
+  }
+
+  /**
+   * A reverse fold, as paper does it: the part of the flap beyond the crease is
+   * mirrored across the crease, so it turns inside out and stays joined along it.
+   * `inside` tucks it between the flap's front and back layers (a crane's neck),
+   * `outside` wraps it around them (a swan's neck pulled out).
+   *
+   * The paper gets there the way your fingers move it: the point rolls over about
+   * its own axis, then swings round into place. A reflection is exactly that: a
+   * half turn about the axis, then a swing about where the axis meets the crease.
+   * With `roll: 'last'` it swings first and rolls once it is clear (for a flap that
+   * starts out lying on top of other paper, like a swan's neck along its body).
+   * With `book`, the axis is the flap's folded spine and its two halves open away
+   * from each other like a book and close on the other side, as real paper turns
+   * inside out, instead of rolling over together.
+   *
+   * @param faces  The flap: every layer that the crease runs through.
+   * @param crease Two points on the crease (model space).
+   * @param o.side A point on the part that moves.
+   * @param o.axis Two points on the moving part's own axis, roughly down its middle.
+   * @param o.front Which faces lie on the front half of the model (the rest are the back half).
+   */
+  reverse(faces: Sim[], crease: [P2, P2], o: { side: P2; axis: [P2, P2]; front: Filter; kind: 'inside' | 'outside'; roll?: 'first' | 'last'; book?: boolean; at?: [number, number]; ease?: EaseName }): Sim[] {
+    const [a, b] = crease;
+    const parts = this.split(faces.filter((f) => isFlat(f.T)), a, b);
+    const s = Math.sign(side(a, b, o.side));
+    const moved = parts.filter((f) => Math.sign(side(a, b, this.info(f).model)) === s);
+    const [m0, m1] = o.axis;
+    const q = intersect(m0, m1, a, b);
+    if (!q) throw new Error('reverse: the axis runs parallel to the crease');
+    // Reflecting across the axis, then across the crease, is a rotation by twice the angle between them.
+    const am = Math.atan2(m1[1] - m0[1], m1[0] - m0[0]), al = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    let turn = 2 * (al - am);
+    turn = Math.atan2(Math.sin(turn), Math.cos(turn)) / DEG;
+    const [t0, t1] = o.at ?? [0, 1];
+    const at = (u: number) => t0 + (t1 - t0) * u;
+    const isFront = (f: Sim) => o.front(this.info(f));
+    const mf = moved.filter(isFront), mb = moved.filter((f) => !isFront(f));
+    // A half turn either way ends in the same place. Opening like a book, the front half
+    // turns toward the viewer and the back half away, so neither passes through the other.
+    const left = moved.length ? Math.sign(side(m0, m1, this.info(moved[0]).model)) || 1 : 1;
+    const turns: [Sim[], number][] = o.book ? [[mf, 180 * left], [mb, -180 * left]] : [[moved, 180]];
+    // The layers trade places while the point turns over, not while it swings.
+    this.restack = o.roll === 'last' ? [at(0.6), t1] : [t0, at(0.35)];
+    for (const [group, deg] of turns) {
+      if (o.roll === 'last') {
+        // Swing, then roll about where the axis has swung to.
+        const c = Math.cos(turn * DEG), sn = Math.sin(turn * DEG);
+        const turned = (p: P2): P2 => [q[0] + c * (p[0] - q[0]) - sn * (p[1] - q[1]), q[1] + sn * (p[0] - q[0]) + c * (p[1] - q[1])];
+        const swing = this.swing(q, turn, { at: [t0, at(0.8)], ease: o.ease ?? 'inOut' });
+        const roll = this.rot(turned(m0), turned(m1), deg, { at: [at(0.6), t1], ease: 'inOut' });
+        this.attach(group, swing, roll);
+      } else {
+        const roll = this.rot(m0, m1, deg, { at: [t0, at(0.35)], ease: 'inOut' });
+        const swing = this.swing(q, turn, { at: [at(0.2), t1], ease: o.ease ?? 'inOut' });
+        this.attach(group, roll, swing);
+      }
+    }
+
+    // Where the turned part sits among the layers.
+    const movedSet = new Set(moved);
+    const rest = this.F.faces.filter((f) => !movedSet.has(f));
+    const rf = rest.filter(isFront), rb = rest.filter((f) => !isFront(f));
+    if (o.kind === 'inside') {
+      this.layer(rf, [...mf, ...mb]);
+      this.layer(mf, mb);
+      this.layer([...mf, ...mb], rb);
+    } else {
+      this.layer(mf, rest);
+      this.layer(rest, mb);
+      this.layer(mf, mb);
+    }
+    return moved;
   }
 
   /** A straight move. */
@@ -516,6 +599,6 @@ export class StepBuilder {
       f.level = nl;
       f.rank = newRank.get(f) ?? f.rank;
     }
-    F.steps.push({ ...this.meta, joints: this.joints, table });
+    F.steps.push({ ...this.meta, joints: this.joints, table, restack: this.restack });
   }
 }
