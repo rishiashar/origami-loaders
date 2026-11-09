@@ -2,6 +2,8 @@
 
 **Loaders that fold.** 3D origami animations rendered as lightweight SVG — no canvas, no WebGL, no dependencies.
 
+**[See them fold →](https://origami-loaders.vercel.app)** Every model, look and paper colour, live, in example apps. Pick one and copy its tag.
+
 A framework-agnostic web component: drop `<origami-loader>` into any page, React, Vue, Svelte or plain HTML.
 
 ## Install
@@ -193,6 +195,8 @@ From then on, npm trusts this repo's publish workflow directly (trusted publishi
    git tag v0.1.1
    git push && git push --tags
    ```
+
+   Or, once the version bump is on `main`, publish a GitHub Release with a new tag such as `v0.1.1` on `main` (Releases, Draft a new release). Creating the tag starts the same publish.
 
 3. Once that release is out, go to the package's Settings, Publishing access, and choose **Require two-factor authentication and disallow tokens**, so a leaked token can never publish.
 

@@ -1,6 +1,6 @@
 {
   "name": "origami-loaders",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Loaders that fold: ten 3D origami models, from a paper crane to a jumping frog, as live SVG. One web component, zero dependencies.",
   "type": "module",
   "license": "MIT",
@@ -16,7 +16,7 @@
     "paper",
     "crane"
   ],
-  "homepage": "https://github.com/rishiashar/origami-loaders#readme",
+  "homepage": "https://origami-loaders.vercel.app",
   "bugs": {
     "url": "https://github.com/rishiashar/origami-loaders/issues"
   },

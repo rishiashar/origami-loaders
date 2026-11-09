@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- The README links to the demo site, [origami-loaders.vercel.app](https://origami-loaders.vercel.app), where every model, look and paper colour folds live.
+- The package's homepage on npm is the demo site.
+
 ## 0.1.0
 
 The first release. `<origami-loader>` is a loader that folds a sheet of paper into an origami model, drawn in 3D as live SVG. It is one web component with no dependencies, and works in plain HTML, React, Vue, Svelte or any other framework.
