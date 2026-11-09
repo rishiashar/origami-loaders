@@ -126,7 +126,8 @@ The paper crane folds through all 14 steps of the classic diagram, about 25 seco
 - [x] Ten models: crane, plane, pleat, envelope, boat, frog, swan, heart, whale, fox
 - [x] A fold check in the test suite that catches the wrong layer showing, folds that undo themselves, and torn creases
 - [ ] Static SVG export for no-JS / `<img>` use
-- [ ] Paper look: wing tops should show the coloured side
+- [x] Paper look: models can start coloured side down, as real ones do, so the plane and envelope fold the colour out
+- [ ] Paper look: the crane's wing tops should show the coloured side
 
 ## How it works
 
@@ -138,7 +139,7 @@ A model is written the way origami is taught: one fold at a time, against the pa
 4. **Layers are tracked.** After every step the engine works out which face ended up on top wherever two overlap, and gives every face a layer height, so flat stacks have real thickness.
 5. **Rendering.** Faces are projected with a perspective camera and shaded by how they face a light. Faces lying flat together are drawn as one panel and painted back-to-front with plane tests and a topological sort; where no plane separates two panels, the one nearer the eye where they actually overlap goes on top (`src/scene.ts`).
 6. **Paper.** Paper Shaders' paper-texture shader renders the grain once per page on a hidden WebGL canvas; the result is baked into an image that each panel maps in sheet space, so the grain folds with the paper (`src/paper-shader.ts`, with a small CPU fallback in `src/texture.ts`).
-7. **Looks are CSS** (`src/styles.ts`).
+7. **Looks are CSS** (`src/styles.ts`). The paper look colours the front of the sheet; a model compiled with `colourDown` starts with the front facing away, the way you fold coloured paper, so the folds bring the colour out.
 
 The crane compiles in about 50 ms on first use. A frame costs about 1 ms of script. The whole package, all ten models included, is about 17 kB gzipped.
 

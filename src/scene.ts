@@ -294,9 +294,11 @@ export class SvgScene {
         });
       }
       const w = W[p.faces[0]];
-      const front = dot(p.normal, sub(eye, p.center)) > 0;
-      const vis: Vec3 = front ? p.normal : [-p.normal[0], -p.normal[1], -p.normal[2]];
+      const facing = dot(p.normal, sub(eye, p.center)) > 0;
+      const vis: Vec3 = facing ? p.normal : [-p.normal[0], -p.normal[1], -p.normal[2]];
       const light = Math.max(0, dot(vis, this.cam.light));
+      // Which side of the paper shows: the coloured front, or the back.
+      const front = facing !== !!m.colourDown;
       const side = front ? 'f' : 'b';
       const tone = `color-mix(in oklab,var(--_l${side}) ${Math.round((0.15 + 0.85 * light) * 100)}%,var(--_s${side}))`;
       const cls = front ? 'front' : 'back';

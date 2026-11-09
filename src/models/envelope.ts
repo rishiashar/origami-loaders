@@ -27,5 +27,5 @@ export function buildEnvelope() {
 
   F.step({ diagram: 5, label: 'Sealed', duration: 0.7, ease: 'inOut', arc: { s: -0.05 } });
   F.step({ diagram: 5, label: 'Into the inbox', duration: 0.6, phase: 'outro', ease: 'in', pose: { ty: -0.5, s: 1.0, o: 0 } });
-  return F.compile();
+  return F.compile({ colourDown: true });
 }

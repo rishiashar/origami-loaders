@@ -88,5 +88,5 @@ export function buildPlane() {
   F.step({ diagram: 7, label: 'Ready to fly', duration: 0.6, ease: 'inOut' });
   F.step({ diagram: 7, label: 'Fly', duration: 2.1, phase: 'outro', ease: 'linear', path: flight });
 
-  return F.compile();
+  return F.compile({ colourDown: true });
 }

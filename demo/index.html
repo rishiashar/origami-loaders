@@ -17,6 +17,7 @@
     --card-scrim: oklch(0.994 0.002 95 / 0.86);
     --device-line: oklch(0.82 0.004 95);
     --elevation-soft: 0 18px 40px -24px oklch(0 0 0 / 0.18);
+    --sq-ring: oklch(0 0 0 / 0.06);
     --bg: oklch(0.994 0.002 95);
     --text: oklch(0.245 0.008 95);
     --muted: oklch(0.53 0.008 95);
@@ -69,6 +70,7 @@
     --card-scrim: oklch(0.175 0.004 95 / 0.84);
     --device-line: oklch(0.42 0.004 95);
     --elevation-soft: none;
+    --sq-ring: oklch(1 0 0 / 0.14);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -93,6 +95,7 @@
       --card-scrim: oklch(0.175 0.004 95 / 0.84);
       --device-line: oklch(0.42 0.004 95);
       --elevation-soft: none;
+      --sq-ring: oklch(1 0 0 / 0.14);
     }
   }
 
@@ -170,41 +173,95 @@
   /* Header */
   header p { color: var(--muted); }
 
-  /* Stage: the loader sits straight on the page. */
-  .stage { margin-top: 72px; }
-  .stage origami-loader {
-    display: block;
-    width: 100%;
-    height: 440px;
-    margin-inline: auto;
-    --ol-bg: var(--bg);
-  }
+  /* Hero: the loader on a desk, and the papers, models and looks it is made of. */
+  .stage { margin-top: 56px; }
+  /* Sized so every fold stays on the desk; the models leave it when they fly, sail or hop off. */
+  .desk { display: grid; align-items: center; height: 460px; border-radius: 18px; background: var(--photo-bg); overflow: clip; }
+  .desk origami-loader { display: block; width: 100%; height: 340px; --ol-bg: var(--photo-bg); }
   .readout {
-    margin-top: 8px;
+    margin-top: 12px;
     min-height: calc(var(--size-body) * var(--leading));
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
   .readout b { color: var(--text); font-weight: var(--weight-normal); }
-  .controls {
-    margin-top: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px 28px;
-  }
-  .controls .group { display: flex; gap: 20px; }
-  .controls .play { min-width: 3.2em; text-align: start; }
   .scrub {
     display: grid;
     grid-template-columns: auto 1fr 3.5em;
     align-items: center;
     gap: 16px;
-    margin-top: 20px;
+    margin-top: 4px;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
+  .scrub .playback { min-width: 3.2em; text-align: start; }
   .scrub output { text-align: end; }
+
+  .maker h3 { margin: 36px 0 14px; }
+  /* Papers: squares of the real thing, a little askew until you pick one up. */
+  .papers { display: grid; grid-template-columns: repeat(10, 1fr); gap: 16px 8px; }
+  .paper {
+    position: relative;
+    display: grid; justify-items: center; gap: 8px;
+    color: var(--muted);
+    font-size: 12px; line-height: 1.3;
+    cursor: pointer;
+    user-select: none; -webkit-user-select: none;
+    transition: color 150ms ease-out;
+  }
+  .paper .sq {
+    width: 100%; max-width: 52px; aspect-ratio: 1;
+    border-radius: 3px;
+    background: linear-gradient(135deg, oklch(1 0 0 / 0.18), transparent 50%, oklch(0 0 0 / 0.08)), var(--c);
+    box-shadow: 0 0 0 1px var(--sq-ring), 0 1px 2px oklch(0 0 0 / 0.12), 0 6px 12px -8px oklch(0 0 0 / 0.3);
+    rotate: var(--r);
+    transition: translate 220ms cubic-bezier(0.23, 1, 0.32, 1), rotate 220ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 220ms ease-out;
+  }
+  .paper[aria-pressed="true"], .paper.custom.on { color: var(--text); }
+  .paper[aria-pressed="true"] .sq, .paper.custom.on .sq {
+    translate: 0 -6px; rotate: 0deg;
+    box-shadow: 0 0 0 1px var(--sq-ring), 0 1px 2px oklch(0 0 0 / 0.12), 0 14px 22px -10px oklch(0 0 0 / 0.4);
+  }
+  /* Any colour: a rainbow until you pick one, then that colour. The native picker sits on top, unseen. */
+  .paper.custom .sq { background: conic-gradient(from 90deg, #e4685a, #e3b341, #5e9f5a, #2f9c95, #3f5daa, #8d5ba6, #e58fa8, #e4685a); }
+  .paper.custom.on .sq { background: linear-gradient(135deg, oklch(1 0 0 / 0.18), transparent 50%, oklch(0 0 0 / 0.08)), var(--c); }
+  .paper.custom input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+  .paper.custom:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+  @media (hover: hover) and (pointer: fine) {
+    .paper:hover { color: var(--text); }
+    .paper:hover .sq { translate: 0 -2px; }
+    .paper[aria-pressed="true"]:hover .sq, .paper.custom.on:hover .sq { translate: 0 -6px; }
+  }
+
+  /* Models: each one finished, in the paper you picked. */
+  .model-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .model-grid button {
+    display: grid; justify-items: center; gap: 2px;
+    padding: 8px 4px 10px;
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 12px; line-height: 1.3;
+    box-shadow: inset 0 0 0 1px var(--hairline);
+    transition: box-shadow 150ms ease-out, color 150ms ease-out, scale 150ms ease-out;
+  }
+  .model-grid button[aria-pressed="true"] { color: var(--text); box-shadow: inset 0 0 0 1.5px var(--text); }
+  .model-grid button:active { scale: 0.96; }
+  .model-grid origami-loader { display: block; width: 100%; max-width: 88px; height: auto; aspect-ratio: 1; --ol-bg: var(--bg); pointer-events: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .model-grid button:hover { color: var(--text); }
+  }
+  .look-row { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+
+  /* The recipe: what you made, and the tag that makes it. */
+  .recipe { margin-top: 36px; padding: 12px; border-radius: 22px; background: var(--win-bg); box-shadow: var(--elevation); }
+  .recipe-top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 4px 6px 0; }
+  .recipe-name { font-weight: var(--weight-medium); }
+  .recipe-hex { margin-left: 6px; color: var(--muted); font: var(--size-small) var(--mono); font-variant-numeric: tabular-nums; }
+  .recipe-top .copy { flex: none; font-size: var(--size-small); font-variant-numeric: tabular-nums; }
+  /* The tag wraps between attributes, never inside one. */
+  .code.tag-code pre { padding: 14px 16px; white-space: pre-wrap; overflow-wrap: normal; }
+  .tag-code span { white-space: nowrap; }
+  .recipe-note { margin: 0 0 12px; padding: 0 6px; color: var(--muted); }
 
   input[type="range"] {
     -webkit-appearance: none;
@@ -240,54 +297,6 @@
   @media (hover: hover) and (pointer: fine) {
     .list button:hover .title { color: var(--text); }
   }
-
-  /* Models: every model, folding live. */
-  .models {
-    list-style: none;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 24px 16px;
-  }
-  .wide-grid { width: min(880px, calc(100vw - 48px)); position: relative; left: 50%; translate: -50% 0; }
-  .models button { display: block; width: 100%; text-align: start; }
-  .models origami-loader { display: block; width: 100%; height: auto; aspect-ratio: 1; --ol-bg: var(--bg); pointer-events: none; }
-  .models .title { display: block; margin-top: 4px; color: var(--muted); transition: color 150ms ease-out; }
-  .models .description { display: block; color: var(--muted); font-size: var(--size-small); line-height: 1.5; text-wrap: pretty; }
-  .models button[aria-pressed="true"] .title { color: var(--text); }
-  @media (hover: hover) and (pointer: fine) {
-    .models button:hover .title { color: var(--text); }
-  }
-  @media (max-width: 760px) { .models { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 480px) { .models { grid-template-columns: repeat(2, 1fr); } }
-
-  /* Looks: the four styles as real loaders. */
-  .looks {
-    list-style: none;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px 16px;
-  }
-  .looks button { display: block; width: 100%; text-align: start; }
-  .looks origami-loader {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1;
-    --ol-bg: var(--bg);
-    pointer-events: none;
-  }
-  .looks .title { display: block; margin-top: 6px; color: var(--muted); transition: color 150ms ease-out; }
-  .looks .description { display: block; color: var(--muted); font-size: var(--size-small); line-height: 1.5; }
-  .looks button[aria-pressed="true"] .title { color: var(--text); }
-  @media (hover: hover) and (pointer: fine) {
-    .looks button:hover .title { color: var(--text); }
-  }
-  @media (max-width: 560px) {
-    .looks { grid-template-columns: repeat(2, 1fr); }
-  }
-
 
   /* Examples: real-looking apps, in the page's own materials. -------------- */
   /* Examples swipe sideways, the way Apple shows highlights: full-bleed, snapping, the next card peeking in. */
@@ -880,8 +889,12 @@
     :root { --space-section: 88px; }
     .code pre { white-space: pre-wrap; overflow-wrap: anywhere; }
     main { padding-top: 72px; }
-    .stage { margin-top: 48px; }
-    .stage origami-loader { height: 340px; }
+    .stage { margin-top: 40px; }
+    .desk { height: 360px; }
+    .desk origami-loader { height: 266px; }
+    .papers { grid-template-columns: repeat(5, 1fr); }
+    .model-grid { gap: 6px; }
+    .model-grid button { padding: 6px 2px 8px; font-size: 11.5px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -903,21 +916,62 @@
   </header>
 
   <div class="stage" id="stage">
-    <origami-loader id="hero" model="crane" look="ink" aria-label="A paper crane folding itself"></origami-loader>
-    <p class="readout" id="readout" aria-live="off"><b id="step-number">Step 1 of 14</b> · <span id="step-label">Start with a square</span></p>
-    <div class="controls">
-      <div class="group" role="group" aria-label="Model">
-        <button class="toggle" type="button" data-model="crane" aria-pressed="true">Crane</button>
-        <button class="toggle" type="button" data-model="plane" aria-pressed="false">Plane</button>
-      </div>
-      <button class="toggle play" type="button" id="play" aria-pressed="true">Pause</button>
+    <div class="desk">
+      <origami-loader id="hero" model="crane" look="paper" style="--ol-front: #E4685A" aria-label="A paper crane folding itself"></origami-loader>
     </div>
-    <label class="scrub">
-      <span>Progress</span>
-      <input type="range" id="progress" min="0" max="1000" value="0" aria-describedby="progress-help">
+    <p class="readout" id="readout" aria-live="off"><b id="step-number">Step 1 of 14</b> · <span id="step-label">Start with a square</span></p>
+    <div class="scrub">
+      <button class="toggle playback" type="button" id="play" aria-pressed="true">Pause</button>
+      <input type="range" id="progress" min="0" max="1000" value="0" aria-label="Progress" aria-describedby="progress-help">
       <output id="progress-value" for="progress">Live</output>
-    </label>
+    </div>
     <p class="muted" id="progress-help" hidden>Drag to set a progress value. The paper folds to that point and holds.</p>
+
+    <div class="maker">
+      <h3 id="colour-label">Paper</h3>
+      <div class="papers" role="group" aria-labelledby="colour-label">
+        <button class="paper" type="button" data-hex="#E4685A" style="--c: #E4685A; --r: -3deg" aria-pressed="true"><span class="sq"></span>Coral</button>
+        <button class="paper" type="button" data-hex="#E3B341" style="--c: #E3B341; --r: 2deg" aria-pressed="false"><span class="sq"></span>Mustard</button>
+        <button class="paper" type="button" data-hex="#5E9F5A" style="--c: #5E9F5A; --r: -1.5deg" aria-pressed="false"><span class="sq"></span>Leaf</button>
+        <button class="paper" type="button" data-hex="#2F9C95" style="--c: #2F9C95; --r: 3deg" aria-pressed="false"><span class="sq"></span>Teal</button>
+        <button class="paper" type="button" data-hex="#3F5DAA" style="--c: #3F5DAA; --r: -2.5deg" aria-pressed="false"><span class="sq"></span>Indigo</button>
+        <button class="paper" type="button" data-hex="#8D5BA6" style="--c: #8D5BA6; --r: 1.5deg" aria-pressed="false"><span class="sq"></span>Plum</button>
+        <button class="paper" type="button" data-hex="#E58FA8" style="--c: #E58FA8; --r: -2deg" aria-pressed="false"><span class="sq"></span>Rose</button>
+        <button class="paper" type="button" data-hex="#B98E62" style="--c: #B98E62; --r: 2.5deg" aria-pressed="false"><span class="sq"></span>Kraft</button>
+        <button class="paper" type="button" data-hex="#26262A" style="--c: #26262A; --r: -1deg" aria-pressed="false"><span class="sq"></span>Ink</button>
+        <label class="paper custom" style="--r: 2deg"><span class="sq"></span>Custom<input type="color" value="#e4685a" aria-label="Pick any colour"></label>
+      </div>
+      <h3 id="model-label">Model</h3>
+      <div class="model-grid" role="group" aria-labelledby="model-label">
+        <button type="button" data-model="crane" data-note="The traditional crane, all 14 steps. About 25 seconds a loop." aria-pressed="true"><origami-loader model="crane" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Crane</button>
+        <button type="button" data-model="plane" data-note="The classic dart in 7 steps. Circles once, then flies off." aria-pressed="false"><origami-loader model="plane" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Plane</button>
+        <button type="button" data-model="pleat" data-note="An accordion that breathes, for waits with no end in sight." aria-pressed="false"><origami-loader model="pleat" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Pleat</button>
+        <button type="button" data-model="envelope" data-note="Four corners to the centre: a quarter of the work, one corner." aria-pressed="false"><origami-loader model="envelope" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Envelope</button>
+        <button type="button" data-model="boat" data-note="A sailboat in three folds. Rocks on the water, then sails off." aria-pressed="false"><origami-loader model="boat" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Boat</button>
+        <button type="button" data-model="frog" data-note="A frog’s face. Hops twice, then hops away." aria-pressed="false"><origami-loader model="frog" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Frog</button>
+        <button type="button" data-model="swan" data-note="Kite, neck, head. Drifts on the water, then glides off." aria-pressed="false"><origami-loader model="swan" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Swan</button>
+        <button type="button" data-model="heart" data-note="The classic heart, folded on the side you see. It beats." aria-pressed="false"><origami-loader model="heart" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Heart</button>
+        <button type="button" data-model="whale" data-note="A kite with its tail lifted. Swims, flicks its tail, dives." aria-pressed="false"><origami-loader model="whale" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Whale</button>
+        <button type="button" data-model="fox" data-note="A fox’s face. Tilts its head and twitches its ears." aria-pressed="false"><origami-loader model="fox" look="paper" texture="none" progress="1" style="--ol-front: #E4685A" aria-hidden="true"></origami-loader>Fox</button>
+      </div>
+      <h3 id="look-label">Look</h3>
+      <div class="look-row" role="group" aria-labelledby="look-label">
+        <button class="toggle" type="button" data-look="paper" title="Coloured on one side" aria-pressed="true">Paper</button>
+        <button class="toggle" type="button" data-look="ink" title="Lines on white paper" aria-pressed="false">Ink</button>
+        <button class="toggle" type="button" data-look="graphite" title="Lit from one side" aria-pressed="false">Graphite</button>
+        <button class="toggle" type="button" data-look="blueprint" title="See-through" aria-pressed="false">Blueprint</button>
+      </div>
+      <div class="recipe">
+        <div class="recipe-top">
+          <p><span class="recipe-name" id="recipe-name">Coral crane</span> <span class="recipe-hex" id="recipe-hex">#E4685A</span></p>
+          <button class="toggle copy" type="button" aria-live="polite" data-copy="snippet-tag">Copy</button>
+        </div>
+        <p class="recipe-note" id="recipe-note">The traditional crane, all 14 steps. About 25 seconds a loop.</p>
+        <div class="code tag-code">
+          <pre id="snippet-tag"><span>&lt;origami-loader</span> <span>model="crane"</span> <span>look="paper"</span> <span>style="--ol-front: #E4685A"</span> <span>aria-label="Loading"&gt;</span><wbr><span>&lt;/origami-loader&gt;</span></pre>
+        </div>
+      </div>
+    </div>
   </div>
 
   <section>
@@ -931,74 +985,6 @@
 &lt;origami-loader&gt;&lt;/origami-loader&gt;</pre>
       <button class="toggle copy" type="button" aria-live="polite" data-copy="snippet-use">Copy</button>
     </div>
-  </section>
-
-  <section>
-    <h2>Models</h2>
-    <ul class="models wide-grid" id="models">
-      <li><button type="button" data-model="crane" aria-pressed="true">
-        <origami-loader model="crane" look="ink" texture="none" aria-hidden="true"></origami-loader>
-        <span class="title">Crane</span><span class="description">The traditional crane, all 14 steps. About 25 seconds a loop.</span>
-      </button></li>
-      <li><button type="button" data-model="plane" aria-pressed="false">
-        <origami-loader model="plane" look="ink" texture="none" aria-hidden="true"></origami-loader>
-        <span class="title">Plane</span><span class="description">The classic dart in 7 steps. Circles once, then flies off.</span>
-      </button></li>
-      <li><button type="button" data-model="pleat" aria-pressed="false">
-        <origami-loader model="pleat" look="ink" texture="none" aria-hidden="true"></origami-loader>
-        <span class="title">Pleat</span><span class="description">An accordion that breathes, for waits with no end in sight.</span>
-      </button></li>
-      <li><button type="button" data-model="envelope" aria-pressed="false">
-        <origami-loader model="envelope" look="ink" texture="none" aria-hidden="true"></origami-loader>
-        <span class="title">Envelope</span><span class="description">Four corners to the centre: a quarter of the work, one corner.</span>
-      </button></li>
-      <li><button type="button" data-model="boat" aria-pressed="false">
-        <origami-loader model="boat" look="ink" texture="none" aria-hidden="true"></origami-loader>
-        <span class="title">Boat</span><span class="description">A sailboat in three folds. Rocks on the water, then sails off.</span>
-      </button></li>
-      <li><button type="button" data-model="frog" aria-pressed="false">
-        <origami-loader model="frog" look="ink" texture="none" aria-hidden="true"></origami-loader>
-        <span class="title">Frog</span><span class="description">A frog&rsquo;s face. Hops twice, then hops away.</span>
-      </button></li>
-      <li><button type="button" data-model="swan" aria-pressed="false">
-        <origami-loader model="swan" look="ink" texture="none" aria-hidden="true"></origami-loader>
-        <span class="title">Swan</span><span class="description">Kite, neck, head. Drifts on the water, then glides off.</span>
-      </button></li>
-      <li><button type="button" data-model="heart" aria-pressed="false">
-        <origami-loader model="heart" look="ink" texture="none" aria-hidden="true"></origami-loader>
-        <span class="title">Heart</span><span class="description">The classic heart, folded on the side you see. It beats.</span>
-      </button></li>
-      <li><button type="button" data-model="whale" aria-pressed="false">
-        <origami-loader model="whale" look="ink" texture="none" aria-hidden="true"></origami-loader>
-        <span class="title">Whale</span><span class="description">A kite with its tail lifted. Swims, flicks its tail, dives.</span>
-      </button></li>
-      <li><button type="button" data-model="fox" aria-pressed="false">
-        <origami-loader model="fox" look="ink" texture="none" aria-hidden="true"></origami-loader>
-        <span class="title">Fox</span><span class="description">A fox&rsquo;s face. Tilts its head and twitches its ears.</span>
-      </button></li>
-    </ul>
-  </section>
-
-  <section>
-    <h2>Looks</h2>
-    <ul class="looks" id="grid">
-      <li><button type="button" data-look="ink" aria-pressed="true">
-        <origami-loader look="ink" progress="0.615" aria-hidden="true"></origami-loader>
-        <span class="title">Ink</span><span class="description">Lines on white paper</span>
-      </button></li>
-      <li><button type="button" data-look="blueprint" aria-pressed="false">
-        <origami-loader look="blueprint" progress="0.615" aria-hidden="true"></origami-loader>
-        <span class="title">Blueprint</span><span class="description">See-through</span>
-      </button></li>
-      <li><button type="button" data-look="graphite" aria-pressed="false">
-        <origami-loader look="graphite" progress="0.615" aria-hidden="true"></origami-loader>
-        <span class="title">Graphite</span><span class="description">Lit from one side</span>
-      </button></li>
-      <li><button type="button" data-look="paper" aria-pressed="false">
-        <origami-loader look="paper" progress="0.615" aria-hidden="true"></origami-loader>
-        <span class="title">Paper</span><span class="description">Coloured on one side</span>
-      </button></li>
-    </ul>
   </section>
 
   <section>
@@ -1329,7 +1315,7 @@
     <h2>Usage</h2>
     <h3>Attributes</h3>
     <dl>
-      <dt>model</dt><dd><code>crane</code> or <code>plane</code>.</dd>
+      <dt>model</dt><dd><code>crane</code>, <code>plane</code>, <code>pleat</code>, <code>envelope</code>, <code>boat</code>, <code>frog</code>, <code>swan</code>, <code>heart</code>, <code>whale</code> or <code>fox</code>.</dd>
       <dt>look</dt><dd><code>ink</code>, <code>blueprint</code>, <code>graphite</code> or <code>paper</code>.</dd>
       <dt>progress</dt><dd>A value from 0 to 1. The paper folds to that point and holds, so the finished model means the work is done.</dd>
       <dt>speed</dt><dd>Playback rate. Defaults to 1.</dd>
@@ -1352,7 +1338,7 @@
     <div class="prose">
       <p>Size it with CSS <code>width</code> and <code>height</code>. It stops drawing while it is off screen, and people who prefer reduced motion see the finished model, still.</p>
       <p>It is a <code>role="progressbar"</code>, so give it an <code>aria-label</code> that says what is loading.</p>
-      <p>Each model is real paper geometry: folds cut the sheet, the engine tracks every layer, and the paper grain folds with the paper. About 14 kB gzipped, with the texture loading on its own.</p>
+      <p>Each model is real paper geometry: folds cut the sheet, the engine tracks every layer, and the paper grain folds with the paper. About 17 kB gzipped with all ten models, and the texture loads on its own.</p>
     </div>
   </section>
 
@@ -1397,7 +1383,6 @@
   var play = document.getElementById('play');
   var range = document.getElementById('progress');
   var value = document.getElementById('progress-value');
-  var minis = Array.prototype.slice.call(document.querySelectorAll('.looks origami-loader'));
 
   function showStep(s) {
     if (!s) return;
@@ -1441,33 +1426,68 @@
     });
   }
 
-  document.querySelectorAll('[data-model]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var m = b.getAttribute('data-model');
-      if (hero.getAttribute('model') === m) return;
-      hero.setAttribute('model', m);
-      // Each look shows the model at a telling moment: the crane's bird base, the flat dart, the rest finished.
-      var still = { crane: '0.615', plane: '0.436' };
-      minis.forEach(function (l) { l.setAttribute('model', m); l.setAttribute('progress', still[m] || '1'); });
-      setPressed('[data-model]', 'data-model', m);
-      hero.setAttribute('aria-label', 'A paper ' + m + ' folding itself');
+  // ---- Make your own: a paper, a model and a look, and the tag for them.
+  var stage = document.getElementById('stage');
+  var thumbs = Array.prototype.slice.call(stage.querySelectorAll('.model-grid origami-loader'));
+  var custom = stage.querySelector('.paper.custom');
+  var customInput = custom.querySelector('input');
+  var pick = { model: 'crane', look: 'paper', hex: '#E4685A' };
+
+  // The paper look colours the sheet; the line looks colour the ink.
+  function colourVar() { return pick.look === 'paper' ? '--ol-front' : '--ol-ink'; }
+  function paint(el) {
+    el.setAttribute('look', pick.look);
+    el.style.removeProperty('--ol-front');
+    el.style.removeProperty('--ol-ink');
+    el.style.setProperty(colourVar(), pick.hex);
+  }
+  function text(el) { return el.textContent.trim(); }
+
+  function sync() {
+    paint(hero);
+    thumbs.forEach(paint);
+    var preset = stage.querySelector('.paper[data-hex="' + pick.hex + '"]');
+    stage.querySelectorAll('.paper[data-hex]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === preset)); });
+    custom.classList.toggle('on', !preset);
+    custom.style.setProperty('--c', pick.hex);
+    if (document.activeElement !== customInput) customInput.value = pick.hex.toLowerCase();
+    setPressed('[data-model]', 'data-model', pick.model);
+    setPressed('[data-look]', 'data-look', pick.look);
+
+    var model = stage.querySelector('[data-model="' + pick.model + '"]');
+    document.getElementById('colour-label').textContent = pick.look === 'paper' ? 'Paper' : 'Ink';
+    document.getElementById('recipe-name').textContent = (preset ? text(preset) : 'Custom') + ' ' + text(model).toLowerCase();
+    document.getElementById('recipe-hex').textContent = pick.hex;
+    document.getElementById('recipe-note').textContent = model.getAttribute('data-note');
+    // One span per attribute, so the tag wraps between them.
+    var parts = ['<origami-loader', 'model="' + pick.model + '"'];
+    if (pick.look !== 'ink') parts.push('look="' + pick.look + '"');
+    parts.push('style="' + colourVar() + ': ' + pick.hex + '"', 'aria-label="Loading">');
+    var span = function (t) { return '<span>' + t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>'; };
+    document.getElementById('snippet-tag').innerHTML = parts.map(span).join(' ') + '<wbr>' + span('</origami-loader>');
+  }
+
+  function choose(patch) {
+    var newModel = patch.model && patch.model !== pick.model;
+    Object.keys(patch).forEach(function (k) { pick[k] = patch[k]; });
+    if (newModel) {
+      hero.setAttribute('model', pick.model);
+      hero.setAttribute('aria-label', 'A paper ' + pick.model + ' folding itself');
       if (inProgressMode()) hero.setAttribute('progress', (range.value / 1000).toFixed(3));
       showStep(hero.currentStep);
-      // Picked from the grid below: bring the big one into view.
-      var r = hero.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > window.innerHeight) {
-        hero.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-      }
-    });
-  });
+    }
+    sync();
+  }
 
-  document.querySelectorAll('[data-look]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var look = b.getAttribute('data-look');
-      hero.setAttribute('look', look);
-      setPressed('[data-look]', 'data-look', look);
-    });
+  stage.addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    if (b.hasAttribute('data-model')) choose({ model: b.getAttribute('data-model') });
+    else if (b.hasAttribute('data-look')) choose({ look: b.getAttribute('data-look') });
+    else if (b.hasAttribute('data-hex')) choose({ hex: b.getAttribute('data-hex') });
   });
+  customInput.addEventListener('input', function () { choose({ hex: customInput.value.toUpperCase() }); });
+  sync();
 
   document.querySelectorAll('[data-copy]').forEach(function (b) {
     var timer;

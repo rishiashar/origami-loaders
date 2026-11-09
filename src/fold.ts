@@ -81,6 +81,8 @@ export interface Folded {
   tracks: Track[][];
   edges: Edge[];
   faceEdges: number[][];
+  /** The sheet starts coloured side down: the side facing the viewer at the start is the back. */
+  colourDown?: boolean;
 }
 
 export interface FaceInfo {
@@ -206,7 +208,11 @@ export class Folder {
     return this;
   }
 
-  compile(): Folded {
+  /**
+   * `colourDown` for models folded the way real ones are from coloured paper: the sheet starts
+   * white side up, and the folds bring the colour out.
+   */
+  compile(opts: { colourDown?: boolean } = {}): Folded {
     const verts: P2[] = [];
     const index = new Map<string, number>();
     const vid = (p: P2) => {
@@ -275,7 +281,7 @@ export class Folder {
     }
     return {
       steps: this.steps, starts, duration: t, content: [c0, c1], pose: this.pose,
-      verts, faces, tracks: this.faces.map((f) => f.hist), edges, faceEdges,
+      verts, faces, tracks: this.faces.map((f) => f.hist), edges, faceEdges, colourDown: opts.colourDown,
     };
   }
 }
