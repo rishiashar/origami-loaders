@@ -12,10 +12,13 @@ export interface StepInfo { index: number; diagram: number; label: string }
 
 const motion = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
 
+/** On a server (Next.js, Nuxt, SvelteKit, Astro) there is no HTMLElement; a stand-in lets the package import there. */
+const Base: typeof HTMLElement = typeof HTMLElement === 'undefined' ? (class {} as typeof HTMLElement) : HTMLElement;
+
 /**
  * <origami-loader model="crane" look="ink" theme="auto" speed="1" progress="0.4" paused texture="none">
  */
-export class OrigamiLoader extends HTMLElement {
+export class OrigamiLoader extends Base {
   static get observedAttributes() { return ['model', 'look', 'speed', 'progress', 'paused', 'texture']; }
 
   private svg: SVGSVGElement;
