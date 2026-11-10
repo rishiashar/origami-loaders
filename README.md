@@ -147,6 +147,24 @@ Back and Next (or ← and →, Home and End) move between steps. Next plays that
 
 It takes `model`, `look`, `theme` and `texture` like the loader, and `speed` (default `0.5`, half the loader's pace). `step` reads or sets the step shown (from 1), `steps` lists them all, `next()`, `back()`, `replay()` and `goTo(n)` move it, and `ol-lesson-step` fires on every step. Text takes the page's colour; style the parts with `::part(caption)`, `::part(button)` and the rest.
 
+## The /fold skill
+
+`/fold` is a skill for Claude (Claude Code and other agents that read skills) that folds new models with this engine. Ask for a model in a line, such as `/fold a traditional tulip, as a loader and a lesson for my class`, and Claude:
+
+1. follows a public diagram (or your own design, described in words), and writes the steps out first;
+2. writes the model one fold at a time with `Folder`;
+3. checks it with the fold check, and looks at every step on a contact sheet of screenshots;
+4. hands over a loader (`<origami-loader model="tulip">`) and a lesson (`<origami-lesson>`, or a standalone lesson page that opens offline).
+
+It folds traditional models and your own designs. It declines models by named modern designers, whose diagrams are their work. Install it with the [skills CLI](https://skills.sh):
+
+```sh
+npx skills add rishiashar/origami-loaders --skill fold          # this project
+npx skills add rishiashar/origami-loaders --skill fold -g       # every project
+```
+
+or copy `skills/fold` into `~/.claude/skills/fold`. It needs Node 22.13 or later, and Playwright for the screenshots (`npm i -D playwright && npx playwright install chromium`). The skill is in [`skills/fold`](skills/fold): `SKILL.md`, references on writing, checking and delivering a model, scripts, and the ten models as examples.
+
 ## Looks
 
 - **ink** — line art, hidden lines removed.
