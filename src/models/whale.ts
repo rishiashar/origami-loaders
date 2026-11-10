@@ -7,8 +7,8 @@ import { track, turn, v3 } from './kinematics';
  * The traditional whale, folded as origami.me teaches it: crease both kite
  * pairs, collapse into a fish base (each side corner becomes a rabbit ear that
  * lies down along the centre), fold the tip back for the head, turn over, fold
- * the side corners in, fold in half, fold the ears down as flippers, and lift
- * the tail. It swims with a flick of the tail, then dives.
+ * the side corners in, fold in half, fold the ears down as flippers, and
+ * mountain fold the tail up. It swims with a flick of the tail, then dives.
  *
  * Sheet coordinates: the diamond with corners (0, ±1) and (±1, 0), white side
  * toward you (seen from −z), so folds toward you go to −z until it turns over.
@@ -28,9 +28,10 @@ const QL = (σ: number): P2 => [σ * Math.SQRT1_2, Math.SQRT1_2 - 1];
 const CORNER_IN = 0.3;
 const HEAD = (1 + t) / 2;
 const TAIL_AT = -0.7;
-/** Which way the lifted tail points: up over the back (+x), leaning back a little (degrees, model space). */
+/** Which way the folded tail points: up over the back (+x), leaning back a little (degrees, model space). */
 const TAIL_DIR = 350;
-const FLICK = 12;
+/** How far the tail's fold opens in a flick (degrees). */
+const FLICK = 28;
 
 type Region = 'centre' | 'upMain' | 'upEar' | 'lowEar' | 'lowMain';
 /** Which part of the fish base a sheet point belongs to. */
@@ -134,16 +135,17 @@ export function buildWhale() {
     s.fold(O, [-1, -1], { where: (f) => isEar(f) && f.sheet[0] < 0, side: [0, -t], toward: -1, at: [0.3, 1] });
   });
 
-  // The tail: an outside reverse fold up over the back.
+  // The tail: a mountain fold near the tip. Both layers go behind together and the tip stands up over the back.
+  const a = (((270 + TAIL_DIR) / 2) * Math.PI) / 180;
+  const tailCrease: [P2, P2] = [[0, TAIL_AT], [-Math.cos(a), TAIL_AT - Math.sin(a)]];
   let tail: Face[] = [];
-  F.step({ diagram: 9, label: 'Lift the tail', duration: 0.9, ease: 'inOut', pose: { s: 1.5 } }, (s) => {
-    const a = (((270 + TAIL_DIR) / 2) * Math.PI) / 180;
-    const crease: [P2, P2] = [[0, TAIL_AT], [-Math.cos(a), TAIL_AT - Math.sin(a)]];
-    tail = s.reverse(s.select((f) => f.flat && !isEar(f)), crease, { side: Bt, axis: [[0, TAIL_AT], Bt], front: (f) => f.sheet[0] > 0, kind: 'outside', roll: 'last', book: true });
+  F.step({ diagram: 10, label: 'Fold the tail up', duration: 0.9, ease: 'inOut', pose: { s: 1.5 } }, (s) => {
+    tail = s.fold(tailCrease[0], tailCrease[1], { where: (f) => !isEar(f), side: Bt, toward: -1 });
   });
 
+  // It swims with a flick of the tail: the fold opens a little and closes again.
   F.step({ diagram: 10, label: 'Swim', duration: 1.4, ease: 'linear', path: swim }, (s) => {
-    s.attach(tail, s.swing([0, TAIL_AT], FLICK, { ease: 'breathe' }));
+    s.attach(tail, s.hinge(tailCrease[0], tailCrease[1], Bt, 1, FLICK, { ease: 'breathe' }));
   });
   F.step({ diagram: 10, label: 'Swim on', duration: 1.4, ease: 'linear', path: swim });
   F.step({ diagram: 10, label: 'Dive', duration: 1.0, phase: 'outro', ease: 'in', pose: { ty: -0.9, rz: 112, o: 0 } });

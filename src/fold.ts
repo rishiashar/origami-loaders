@@ -313,8 +313,11 @@ export class StepBuilder {
     return this.F.faces.filter((f) => !where || where(this.info(f)));
   }
 
-  /** Cut flat faces along a model-space line. Returns what the given faces became. */
-  split(faces: Sim[], a: P2, b: P2): Sim[] {
+  /**
+   * Cut flat faces along a model-space line. Returns what the given faces became.
+   * A `soft` cut is where paper flexes without being creased: it leaves no crease mark.
+   */
+  split(faces: Sim[], a: P2, b: P2, soft = false): Sim[] {
     const want = new Set(faces);
     const out: Sim[] = [];
     const next: Sim[] = [];
@@ -327,7 +330,7 @@ export class StepBuilder {
       if (!left || !right || Math.abs(signedArea(left)) < 1e-10 || Math.abs(signedArea(right)) < 1e-10) {
         next.push(f); out.push(f); continue;
       }
-      if (chord) this.F.chords.push({ a: chord[0], b: chord[1], step: this.index });
+      if (chord && !soft) this.F.chords.push({ a: chord[0], b: chord[1], step: this.index });
       const chain = this.chains.get(f);
       this.chains.delete(f);
       for (const poly of [left, right]) {
@@ -373,8 +376,10 @@ export class StepBuilder {
   }
 
   /**
-   * A reverse fold, as paper does it: the part of the flap beyond the crease is
-   * mirrored across the crease, so it turns inside out and stays joined along it.
+   * A reverse fold, drawn the quick way: the part of the flap beyond the crease is
+   * mirrored across the crease, so it ends turned inside out and joined along it,
+   * but its crease opens on the way there. For an inside reverse fold that never
+   * comes apart, use `insideReverse`.
    * `inside` tucks it between the flap's front and back layers (a crane's neck),
    * `outside` wraps it around them (a swan's neck pulled out).
    *
@@ -443,6 +448,85 @@ export class StepBuilder {
       this.layer(rest, mb);
       this.layer(mf, mb);
     }
+    return moved;
+  }
+
+  /**
+   * An inside reverse fold, as paper does it: the point is mirrored across the crease and ends
+   * tucked between its own two sides, its spine turned inside out.
+   *
+   * Flat, stiff paper cannot get there with everything else shut: the point has to pass between
+   * two layers that touch. Real paper flexes. The layers beside the crease spread like a mouth,
+   * the point swings through, and they close again. Here that flex is one soft line on each side,
+   * square to the crease from where it meets the spine. The paper between that line and the crease
+   * lifts about it, the point folds in under it about the crease, and the lift is whatever keeps
+   * the point's spine in the plane between the two sides. So every crease stays shut all the way.
+   *
+   * With the point folded by a, the lift is atan(sin a / tan κ), where 90° − κ is the angle between
+   * the spine and the crease: nothing at the start, 90° − κ halfway, nothing again at the end.
+   *
+   * @param faces  The point: every layer that the crease runs through.
+   * @param crease Two points on the crease (model space).
+   * @param o.side A point on the part that moves, toward its tip.
+   * @param o.spine Two points on the point's spine, the folded edge that joins its two sides.
+   * @param o.front Which faces lie on the half of the model nearer +z (the rest are the far half).
+   * @param o.local Only the point's own layers flex open (a point that stands free, like a neck).
+   *                Otherwise every layer in the way does (a point that rises from inside a body).
+   */
+  insideReverse(faces: Sim[], crease: [P2, P2], o: { side: P2; spine: [P2, P2]; front: Filter; local?: boolean; at?: [number, number]; ease?: EaseName }): Sim[] {
+    const [a, b] = crease;
+    const V = intersect(o.spine[0], o.spine[1], a, b);
+    if (!V) throw new Error('insideReverse: the spine runs parallel to the crease');
+    const parts = this.split(faces.filter((f) => isFlat(f.T)), a, b);
+    const s = Math.sign(side(a, b, o.side));
+    const onSide = (f: Sim, sgn: number) => Math.sign(side(a, b, this.info(f).model)) === sgn;
+    const moved = parts.filter((f) => onSide(f, s));
+    if (!moved.length) return moved;
+
+    // From where they meet: n along the spine toward the tip, c along the crease into the paper.
+    const unit2 = (x: number, y: number): P2 => { const l = Math.hypot(x, y); return [x / l, y / l]; };
+    const cx = (p: P2, q: P2) => p[0] * q[1] - p[1] * q[0];
+    let n = unit2(o.spine[1][0] - o.spine[0][0], o.spine[1][1] - o.spine[0][1]);
+    if ((o.side[0] - V[0]) * n[0] + (o.side[1] - V[1]) * n[1] < 0) n = [-n[0], -n[1]];
+    let c = unit2(b[0] - a[0], b[1] - a[1]);
+    const mid = centroid(moved.map((f) => this.info(f).model));
+    if ((mid[0] - V[0]) * c[0] + (mid[1] - V[1]) * c[1] < 0) c = [-c[0], -c[1]];
+    const sinκ = n[0] * c[0] + n[1] * c[1];
+    if (sinκ < 1e-6) throw new Error('insideReverse: the point would land outside its own sides (that is an outside reverse fold)');
+    // The soft line: square to the crease, away from the tip. The point lands between it and the crease.
+    let g: P2 = [-c[1], c[0]];
+    if (g[0] * n[0] + g[1] * n[1] > 0) g = [-g[0], -g[1]];
+    const C: P2 = [V[0] + c[0], V[1] + c[1]], G: P2 = [V[0] + g[0], V[1] + g[1]];
+
+    const set = new Set(moved);
+    const stays = (o.local ? parts : this.F.faces).filter((f) => !set.has(f) && isFlat(f.T) && onSide(f, -s));
+    const lip = Math.sign(side(V, G, C));
+    const wedge = this.split(stays, V, G, true).filter((f) => onSide(f, -s) && Math.sign(side(V, G, this.info(f).model)) === lip);
+
+    // On the near side the point folds away from you, in under its own side, and that side lifts toward you.
+    const tip = -Math.sign(cx(c, n)) || 1;
+    const lever = Math.sign(cx(g, n)) || 1;
+    const lift = (deg: number) => {
+      const φ = tip * deg * DEG, k = sinκ * (1 - Math.cos(φ));
+      const mx = n[0] * Math.cos(φ) + c[0] * k, my = n[1] * Math.cos(φ) + c[1] * k, mz = cx(c, n) * Math.sin(φ);
+      return Math.atan2(-lever * mz, lever * (g[0] * my - g[1] * mx)) / DEG;
+    };
+    const e = eases[o.ease ?? 'inOut'];
+    const isFront = (f: Sim) => o.front(this.info(f));
+    for (const σ of [1, -1]) {
+      const mine = (f: Sim) => isFront(f) === σ > 0;
+      const open = this.rot(V, G, (d) => σ * lift(180 * e(d)), { at: o.at });
+      const fold = this.rot(V, C, (d) => σ * tip * 180 * e(d), { at: o.at });
+      this.attach(wedge.filter(mine), open);
+      this.attach(moved.filter(mine), fold, open);
+    }
+
+    // The point ends between the two sides it came from.
+    const rest = this.F.faces.filter((f) => !set.has(f));
+    const mf = moved.filter(isFront), mb = moved.filter((f) => !isFront(f));
+    this.layer(rest.filter(isFront), moved);
+    this.layer(mf, mb);
+    this.layer(moved, rest.filter((f) => !isFront(f)));
     return moved;
   }
 

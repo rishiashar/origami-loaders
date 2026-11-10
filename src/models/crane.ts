@@ -174,22 +174,24 @@ export function buildCrane() {
 
   // Inside reverse folds, as on the real crane: each leg is mirrored up across a crease
   // where it meets the body, so it turns inside out and rises between the body's layers.
+  // The body's layers on that side spread to let it through, then close again.
   const front = sheet((p) => topQ(p) || rightQ(p));
-  /** The leg below the waist, from its tip to the middle of its top. */
-  const legAxis = (σ: number): [P2, P2] => [B0, [σ * 0.097, yLeg]];
+  /** Each leg's two sides are joined down the centre line, from the open point to the closed one. */
+  const legSpine: [P2, P2] = [B0, c];
   const legCrease = (σ: number): [P2, P2] => [[0, yLeg], [σ * Math.cos(NECK_SLOPE), yLeg - Math.sin(NECK_SLOPE)]];
   const reverseLeg = (diagram: number, label: string, quadrant: (p: P2) => boolean, σ: number) => {
     let moved: Face[] = [];
-    F.step({ diagram, label, duration: 1.0, ease: 'inOut', pose: { s: 1.45, ty: -0.95 } }, (s) => {
-      moved = s.reverse(s.select((f) => quadrant(f.sheet) && f.flat && f.model[1] < yLeg), legCrease(σ), { side: B0, axis: legAxis(σ), front, kind: 'inside' });
+    F.step({ diagram, label, duration: 1.2, ease: 'inOut', pose: { s: 1.45, ty: -0.95 } }, (s) => {
+      moved = s.insideReverse(s.select((f) => quadrant(f.sheet) && f.flat && f.model[1] < yLeg), legCrease(σ), { side: B0, spine: legSpine, front });
     });
     return () => moved;
   };
   const neck = reverseLeg(10, 'Reverse fold the neck up', TL, 1);
   reverseLeg(11, 'Reverse fold the tail up', BR, -1);
-  // Where the neck ended up: its tip and axis, mirrored across the crease.
+  // Where the neck ended up: its tip, and the middle of its base, mirrored across the crease.
   const neckTip = mirror(B0, legCrease(1));
-  const neckBase = mirror(legAxis(1)[1], legCrease(1));
+  const neckBase = mirror([0.097, yLeg], legCrease(1));
+  const neckSpine: [P2, P2] = [[0, yLeg], neckTip];
 
   let wingF: Face[] = [], wingB: Face[] = [];
   const wingA: P2 = [-1, yWing], wingB2: P2 = [1, yWing], tip: P2 = [0, 1.2];
@@ -206,7 +208,7 @@ export function buildCrane() {
     const at: P2 = [neckTip[0] - (dx / len) * HEAD, neckTip[1] - (dy / len) * HEAD];
     const lineAngle = (dir + HEAD_DIR) / 2;
     const crease: [P2, P2] = [at, [at[0] + Math.cos(lineAngle), at[1] + Math.sin(lineAngle)]];
-    s.reverse(neck(), crease, { side: neckTip, axis: [neckBase, neckTip], front, kind: 'inside' });
+    s.insideReverse(neck(), crease, { side: neckTip, spine: neckSpine, front, local: true });
   });
 
   F.step({ diagram: 14, label: 'Spread the wings', duration: 1.5, ease: 'inOut', pose: { ry: 585, rx: -14, s: 1.7, ty: -0.9 } }, (s) => {

@@ -8,9 +8,9 @@
  *   over the nearer one, so the wrong side or layer of the paper shows.
  * - cancel: a face rides joints that undo each other within one step. That is
  *   almost always a fold line running on into a flap it was not meant for.
- * - tear:  two faces that share a crease drift apart. A reverse fold opens
- *   its crease on the way (the point rolls over, then swings round), so in a
- *   step with a swing only the end counts: by then every crease must be shut.
+ * - tear:  two faces that share a crease drift apart. Paper never does this,
+ *   so every crease is checked at many moments of every step, with no
+ *   exceptions.
  */
 import { apply, mul, type Mat, type Vec3 } from '../src/math';
 import { ccw, centroid, clipConvex, signedArea, type P2 } from '../src/geom';
@@ -34,7 +34,10 @@ const MIN_AREA = 2e-4;
 /** Depth difference below which two faces count as touching, not stacked. */
 const MIN_DEPTH = 2e-5;
 
-const isSwing = (u: Vec3) => Math.abs(u[0]) < 1e-9 && Math.abs(u[1]) < 1e-9;
+/** Moments sampled in every step for tearing alone, which is cheap to check. */
+const TEAR_MOMENTS = Array.from({ length: 40 }, (_, i) => ((i + 1) / 40) * 0.999);
+/** Largest gap between two faces along a shared crease that still counts as joined. */
+const MAX_GAP = 2e-3;
 
 function sameMat(a: Mat, b: Mat, eps = 1e-7) {
   for (let i = 0; i < 12; i++) if (Math.abs(a[i] - b[i]) > eps) return false;
@@ -78,7 +81,6 @@ export function inspect(m: Folded, moments = MOMENTS): Issue[] {
       });
     }
 
-    const swings = step.joints.some((j) => j.rot && isSwing(j.u));
     for (const u of moments) {
       const t = m.starts[k] + step.duration * u;
       const frame = player.evaluate(t);
@@ -120,15 +122,18 @@ export function inspect(m: Folded, moments = MOMENTS): Issue[] {
         issues.push({ kind: 'order', step: k, label: step.label, at: u, detail: `${count} overlap(s) painted back to front, e.g. face ${worst.g} drawn over nearer face ${worst.f}` });
       }
 
-      // Tearing.
-      if (swings && u < moments[moments.length - 1]) continue;
+    }
+
+    // Tearing: no crease may open at any moment.
+    for (const u of TEAR_MOMENTS) {
+      const frame = player.evaluate(m.starts[k] + step.duration * u);
       let gap = 0, at = -1;
       m.edges.forEach((e, i) => {
         if (e.faces.length < 2) return;
         const g = edgeGap(frame.T, i);
         if (g > gap) { gap = g; at = i; }
       });
-      if (gap > 2e-3) issues.push({ kind: 'tear', step: k, label: step.label, at: u, detail: `crease ${at} opens by ${gap.toFixed(4)}` });
+      if (gap > MAX_GAP) { issues.push({ kind: 'tear', step: k, label: step.label, at: u, detail: `crease ${at} opens by ${gap.toFixed(4)}` }); break; }
     }
   });
   return issues;
