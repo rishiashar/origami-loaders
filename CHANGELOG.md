@@ -6,10 +6,10 @@
 - `whale` folds its tail with a plain mountain fold, as origami.me does, and flicks it by opening that fold a little.
 - `crane` no longer comes apart at its neck, tail and head. The engine can now flex paper: for an inside reverse fold the layers beside the crease spread open along a soft line, the point swings through between them, and they close again. `insideReverse` is on the step builder for your own models.
 - The fold check is stricter: every crease of every model is checked at 40 moments of every step, with no exceptions.
-- `frog` folds the way origami.me teaches it. After the front legs, the bottom folds up and the sides fold in. Then the bottom is pushed up and its side flaps squash out to become real back legs. The bottom then folds up and back down in half for the spring. The finished frog sits side-on and pitches nose-up as it hops.
 
 ## 0.1.1
 
+- `frog` folds the way origami.me teaches it. After the front legs, the bottom folds up and the sides fold in. Then the bottom is pushed up and its side flaps squash out to become real back legs. The bottom then folds up and back down in half for the spring. The finished frog sits side-on and pitches nose-up as it hops.
 - The README links to the demo site, [origami-loaders.vercel.app](https://origami-loaders.vercel.app), where every model, look and paper colour folds live.
 - The package's homepage on npm is the demo site.
 

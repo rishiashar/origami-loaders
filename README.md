@@ -197,7 +197,9 @@ From then on, npm trusts this repo's publish workflow directly (trusted publishi
    git push && git push --tags
    ```
 
-   Or, once the version bump is on `main`, publish a GitHub Release with a new tag such as `v0.1.1` on `main` (Releases, Draft a new release). Creating the tag starts the same publish.
+   Or, once the version bump is on `main`, either:
+   - run the Publish workflow on `main` (Actions, Publish, Run workflow). It publishes the version in `package.json`, then creates its tag and GitHub release with the notes from `CHANGELOG.md`; or
+   - publish a GitHub Release with a new tag such as `v0.1.1` on `main` (Releases, Draft a new release). Creating the tag starts the same publish.
 
 3. Once that release is out, go to the package's Settings, Publishing access, and choose **Require two-factor authentication and disallow tokens**, so a leaked token can never publish.
 

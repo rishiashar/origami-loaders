@@ -3,12 +3,16 @@ on:
   push:
     tags:
       - 'v*'
+  # "Run workflow" on main (Actions tab, or the API): publishes the version in
+  # package.json, then creates its tag and GitHub release with notes from CHANGELOG.md.
+  workflow_dispatch:
+concurrency: publish
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      id-token: write
+      contents: write   # the tag and release on manual runs
+      id-token: write   # trusted publishing and provenance
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,15 +25,38 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: Check tag matches package.json version
+      - name: Check the version
+        id: version
         run: |
-          expected="v$(node -p "require('./package.json').version")"
-          if [ "$expected" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version (expected $expected)"
-            exit 1
+          tag="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            if [ "$tag" != "$GITHUB_REF_NAME" ]; then
+              echo "::error::Tag $GITHUB_REF_NAME does not match package.json version (expected $tag)"
+              exit 1
+            fi
+          else
+            if [ "$GITHUB_REF_NAME" != main ]; then
+              echo "::error::Run this from main, not $GITHUB_REF_NAME"
+              exit 1
+            fi
+            if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+              echo "::error::$tag is already released. Bump the version in package.json first."
+              exit 1
+            fi
           fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
       # npm tries trusted publishing first and falls back to NPM_TOKEN, which only the
-      # first release needs (see "Releasing" in the README).
+      # first release needed (see "Releasing" in the README).
       - run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # A tag pushed with this job's token starts no new run, so this never publishes twice.
+      - name: Tag and release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          awk -v h="## ${TAG#v}" '$0 == h { p = 1; next } /^## / && p { exit } p' CHANGELOG.md > notes.md
+          echo "Full notes: [CHANGELOG.md](https://github.com/$GITHUB_REPOSITORY/blob/$TAG/CHANGELOG.md)" >> notes.md
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file notes.md
