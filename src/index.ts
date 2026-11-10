@@ -1,6 +1,8 @@
 import { defineOrigamiLoader } from './element';
+import { defineOrigamiLesson } from './lesson';
 
 export { OrigamiLoader, defineOrigamiLoader, type Look, type StepInfo } from './element';
+export { OrigamiLesson, defineOrigamiLesson, lessonSteps, type LessonStep } from './lesson';
 export {
   registerModel, getModel, listModels,
   buildCrane, buildPlane, buildPleat, buildEnvelope, buildBoat, buildFrog, buildSwan, buildHeart, buildWhale, buildFox,
@@ -13,3 +15,4 @@ export { SvgScene, paintOrder, defaultCamera, type Camera } from './scene';
 export { paperTexture } from './texture';
 
 defineOrigamiLoader();
+defineOrigamiLesson();

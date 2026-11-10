@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `<origami-lesson>` teaches a model one step at a time: Back and Next (or ← and →) move between steps, Next plays that step's fold, and Replay plays it again. It shows the step number and label, follows the loader's looks and themes, and stops before the model's own show, such as the crane flying off.
+- The fold check ships in the package as `origami-loaders/check`, so anyone writing a model can check that the right side of the paper shows, no fold undoes itself and no crease comes apart.
+
 ## 0.1.2
 
 - `swan` folds the way paper does. The tip folds back for the head before the model folds in half; then the neck is pulled up and the head after it, as origami.me teaches. Each pull is worked out exactly: the crease at the base swings round and the chest folds with it, so the neck never comes loose from the body.

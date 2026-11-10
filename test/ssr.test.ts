@@ -8,6 +8,7 @@ describe('server rendering', () => {
     expect(typeof globalThis.HTMLElement).toBe('undefined');
     const m = await import('../src/index');
     expect(typeof m.OrigamiLoader).toBe('function');
+    expect(typeof m.OrigamiLesson).toBe('function');
     expect(m.listModels()).toContain('crane');
   });
 });

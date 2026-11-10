@@ -135,6 +135,18 @@ const issues = inspect(buildCup());
 if (issues.length) console.error(describeIssues('cup', issues));
 ```
 
+## Lessons
+
+`<origami-lesson>` teaches a model one step at a time, for a tutorial, a classroom or a help page:
+
+```html
+<origami-lesson model="crane" look="paper"></origami-lesson>
+```
+
+Back and Next (or ← and →, Home and End) move between steps. Next plays that step's fold, slowly enough to follow, and Replay plays it again. Each step shows its number and label, such as "Step 3 of 4 · Fold the bottom up for the hull". The lesson starts on the flat sheet and stops at the finished model, before its show (the crane flying off, the heart beating).
+
+It takes `model`, `look`, `theme` and `texture` like the loader, and `speed` (default `0.5`, half the loader's pace). `step` reads or sets the step shown (from 1), `steps` lists them all, `next()`, `back()`, `replay()` and `goTo(n)` move it, and `ol-lesson-step` fires on every step. Text takes the page's colour; style the parts with `::part(caption)`, `::part(button)` and the rest.
+
 ## Looks
 
 - **ink** — line art, hidden lines removed.
