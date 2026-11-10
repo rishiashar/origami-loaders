@@ -17,4 +17,4 @@ Leave out `Co-Authored-By: Claude` and `Claude-Session` lines in commit messages
 
 ## Releasing
 
-Sessions can't push tags. To release, get the version bump and its `CHANGELOG.md` entry onto `main`, then run the Publish workflow (`publish.yml`) on `main` with a workflow_dispatch. It publishes to npm by trusted publishing, then creates the tag and GitHub release itself. The README's "Releasing" section has the details.
+Sessions can't push tags, and the GitHub connection can't start or re-run workflows (it gets a 403). To release, get the version bump and its `CHANGELOG.md` entry onto `main`, then ask rishiashar to click **Run workflow** on the Publish workflow: https://github.com/rishiashar/origami-loaders/actions/workflows/publish.yml. It publishes to npm by trusted publishing, then creates the tag and GitHub release itself. The README's "Releasing" section has the details.
