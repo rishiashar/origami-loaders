@@ -23,12 +23,18 @@ export function examples() {
   return files;
 }
 
+/** Examples missing or out of date in skills/fold/examples. */
+export function stale() {
+  const want = examples();
+  return Object.keys(want).filter((f) => !existsSync(join(out, f)) || readFileSync(join(out, f), 'utf8') !== want[f]);
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const want = examples();
   if (process.argv.includes('--check')) {
-    const stale = Object.keys(want).filter((f) => !existsSync(join(out, f)) || readFileSync(join(out, f), 'utf8') !== want[f]);
-    if (stale.length) {
-      console.error(`skills/fold/examples is out of date (${stale.join(', ')}). Run: npm run skill`);
+    const old = stale();
+    if (old.length) {
+      console.error(`skills/fold/examples is out of date (${old.join(', ')}). Run: npm run skill`);
       process.exit(1);
     }
   } else {
