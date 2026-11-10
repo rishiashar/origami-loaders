@@ -109,6 +109,44 @@ Pick one with the `model` attribute:
 <origami-loader model="plane"></origami-loader>
 ```
 
+### Your own models
+
+A model is a function that folds a sheet one step at a time with `Folder`, the same engine the ten models use (`src/models/` has them all as examples). Register it and the element folds it:
+
+```js
+import { Folder, registerModel } from 'origami-loaders';
+
+registerModel('cup', () => {
+  const F = new Folder();
+  F.step({ diagram: 1, label: 'Fold in half diagonally', duration: 1 }, (s) => {
+    s.fold([-1, -1], [1, 1], { side: [-1, 1], toward: -1 });
+  });
+  // …one F.step per step of the diagram
+  return F.compile();
+});
+```
+
+Check it with the fold check, which runs without a browser in well under a second. An empty list means the right side of the paper shows, no fold undoes itself and no crease comes apart:
+
+```js
+import { inspect, describeIssues } from 'origami-loaders/check';
+
+const issues = inspect(buildCup());
+if (issues.length) console.error(describeIssues('cup', issues));
+```
+
+## Lessons
+
+`<origami-lesson>` teaches a model one step at a time, for a tutorial, a classroom or a help page:
+
+```html
+<origami-lesson model="crane" look="paper"></origami-lesson>
+```
+
+Back and Next (or ← and →, Home and End) move between steps. Next plays that step's fold, slowly enough to follow, and Replay plays it again. Each step shows its number and label, such as "Step 3 of 4 · Fold the bottom up for the hull". The lesson starts on the flat sheet and stops at the finished model, before its show (the crane flying off, the heart beating).
+
+It takes `model`, `look`, `theme` and `texture` like the loader, and `speed` (default `0.5`, half the loader's pace). `step` reads or sets the step shown (from 1), `steps` lists them all, `next()`, `back()`, `replay()` and `goTo(n)` move it, and `ol-lesson-step` fires on every step. Text takes the page's colour; style the parts with `::part(caption)`, `::part(button)` and the rest.
+
 ## Looks
 
 - **ink** — line art, hidden lines removed.

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Folder, type Filter, type StepBuilder } from '../src/fold';
 import type { P2 } from '../src/geom';
 import { buildModel, listModels } from '../src/models/index';
-import { describeIssues, inspect } from './inspect';
+import { describeIssues, inspect } from '../src/check';
 
 // Every model, all the way through every step: the right layer shows, no fold
 // undoes itself, and no crease ever comes apart.

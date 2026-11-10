@@ -1,6 +1,6 @@
 {
   "name": "origami-loaders",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Loaders that fold: ten 3D origami models, from a paper crane to a jumping frog, as live SVG. One web component, zero dependencies.",
   "type": "module",
   "license": "MIT",
@@ -34,6 +34,11 @@
       "import": "./dist/origami-loaders.js",
       "default": "./dist/origami-loaders.js"
     },
+    "./check": {
+      "types": "./dist/types/check.d.ts",
+      "import": "./dist/check.js",
+      "default": "./dist/check.js"
+    },
     "./iife": "./dist/origami-loaders.iife.js",
     "./package.json": "./package.json"
   },
@@ -51,7 +56,8 @@
     "test": "vitest run",
     "demo": "npm run build && node -e \"console.log(process.cwd()+'/demo/dist/index.html')\"",
     "capture": "node scripts/capture.mjs",
-    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+    "prepublishOnly": "npm run typecheck && npm test && npm run build",
+    "skill": "node scripts/sync-skill.mjs"
   },
   "engines": {
     "node": ">=18"

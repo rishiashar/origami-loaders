@@ -27,6 +27,8 @@ async function main() {
     ...shared, format: 'esm', splitting: true, outdir: p('dist'),
     entryNames: 'origami-loaders', chunkNames: 'chunks/[name]-[hash]',
   });
+  // The fold check, for people writing their own models: its own bundle, so the loader stays small.
+  await build({ ...shared, entryPoints: [p('src/check.ts')], format: 'esm', outfile: p('dist/check.js') });
   await build({
     ...shared,
     format: 'iife',
