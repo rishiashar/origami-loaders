@@ -1,0 +1,10 @@
+schema_version: "1.1"
+name: cup-classroom-lesson
+expected_outcome: |
+  A standalone lesson page (one HTML file that opens offline, with <origami-lesson>)
+  that teaches the traditional paper cup step by step from a square: fold into a
+  triangle, fold one side corner across to the opposite edge, fold the other across,
+  fold the top flaps down on either side. The model passes the skill's fold check and
+  the agent looked at every step. The page's title and intro suit a class of six- and
+  seven-year-olds and say what paper to use. The final message tells the teacher how to
+  open it and asks them to fold one cup by hand with the lesson before Friday.
