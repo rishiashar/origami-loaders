@@ -56,7 +56,8 @@
     "test": "vitest run",
     "demo": "npm run build && node -e \"console.log(process.cwd()+'/demo/dist/index.html')\"",
     "capture": "node scripts/capture.mjs",
-    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+    "prepublishOnly": "npm run typecheck && npm test && npm run build",
+    "skill": "node scripts/sync-skill.mjs"
   },
   "engines": {
     "node": ">=18"
