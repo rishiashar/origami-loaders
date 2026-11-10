@@ -1,6 +1,6 @@
 {
   "name": "origami-loaders",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Loaders that fold: ten 3D origami models, from a paper crane to a jumping frog, as live SVG. One web component, zero dependencies.",
   "type": "module",
   "license": "MIT",
