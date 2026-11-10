@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2
 
 - `swan` folds the way paper does. The tip folds back for the head before the model folds in half; then the neck is pulled up and the head after it, as origami.me teaches. Each pull is worked out exactly: the crease at the base swings round and the chest folds with it, so the neck never comes loose from the body.
 - `whale` folds its tail with a plain mountain fold, as origami.me does, and flicks it by opening that fold a little.
