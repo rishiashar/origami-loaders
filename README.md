@@ -109,6 +109,32 @@ Pick one with the `model` attribute:
 <origami-loader model="plane"></origami-loader>
 ```
 
+### Your own models
+
+A model is a function that folds a sheet one step at a time with `Folder`, the same engine the ten models use (`src/models/` has them all as examples). Register it and the element folds it:
+
+```js
+import { Folder, registerModel } from 'origami-loaders';
+
+registerModel('cup', () => {
+  const F = new Folder();
+  F.step({ diagram: 1, label: 'Fold in half diagonally', duration: 1 }, (s) => {
+    s.fold([-1, -1], [1, 1], { side: [-1, 1], toward: -1 });
+  });
+  // …one F.step per step of the diagram
+  return F.compile();
+});
+```
+
+Check it with the fold check, which runs without a browser in well under a second. An empty list means the right side of the paper shows, no fold undoes itself and no crease comes apart:
+
+```js
+import { inspect, describeIssues } from 'origami-loaders/check';
+
+const issues = inspect(buildCup());
+if (issues.length) console.error(describeIssues('cup', issues));
+```
+
 ## Looks
 
 - **ink** — line art, hidden lines removed.

@@ -34,6 +34,11 @@
       "import": "./dist/origami-loaders.js",
       "default": "./dist/origami-loaders.js"
     },
+    "./check": {
+      "types": "./dist/types/check.d.ts",
+      "import": "./dist/check.js",
+      "default": "./dist/check.js"
+    },
     "./iife": "./dist/origami-loaders.iife.js",
     "./package.json": "./package.json"
   },

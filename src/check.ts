@@ -1,6 +1,13 @@
 /**
  * Quick, browser-free checks that a model looks right as it folds.
  *
+ *   import { inspect, describeIssues } from 'origami-loaders/check';
+ *   const issues = inspect(buildTulip());
+ *   if (issues.length) throw new Error(describeIssues('tulip', issues));
+ *
+ * An empty list means the paper behaves. Run it on every model you write; it
+ * takes well under a second.
+ *
  * For a handful of moments in every step this lays the frame out exactly as
  * the renderer does (same panels, same paint order) and looks for:
  *
@@ -12,11 +19,11 @@
  *   so every crease is checked at many moments of every step, with no
  *   exceptions.
  */
-import { apply, mul, type Mat, type Vec3 } from '../src/math';
-import { ccw, centroid, clipConvex, signedArea, type P2 } from '../src/geom';
-import { jointMatrix, type Folded } from '../src/fold';
-import { Player } from '../src/player';
-import { defaultCamera, layoutFrame } from '../src/scene';
+import { apply, mul, type Mat, type Vec3 } from './math';
+import { ccw, centroid, clipConvex, signedArea, type P2 } from './geom';
+import { jointMatrix, type Folded } from './fold';
+import { Player } from './player';
+import { defaultCamera, layoutFrame } from './scene';
 
 export interface Issue {
   kind: 'order' | 'cancel' | 'tear';
