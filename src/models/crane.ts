@@ -1,5 +1,6 @@
 import { Folder, type Face, type Filter } from '../fold';
 import type { P2 } from '../geom';
+import type { Pose } from '../motion';
 
 /**
  * The traditional paper crane, following the classic 14-step diagram.
@@ -179,15 +180,17 @@ export function buildCrane() {
   /** Each leg's two sides are joined down the centre line, from the open point to the closed one. */
   const legSpine: [P2, P2] = [B0, c];
   const legCrease = (σ: number): [P2, P2] => [[0, yLeg], [σ * Math.cos(NECK_SLOPE), yLeg - Math.sin(NECK_SLOPE)]];
-  const reverseLeg = (diagram: number, label: string, quadrant: (p: P2) => boolean, σ: number) => {
+  const reverseLeg = (diagram: number, label: string, quadrant: (p: P2) => boolean, σ: number, pose?: Partial<Pose>) => {
     let moved: Face[] = [];
-    F.step({ diagram, label, duration: 1.2, ease: 'inOut', pose: { s: 1.45, ty: -0.95 } }, (s) => {
+    F.step({ diagram, label, duration: 1.2, ease: 'inOut', pose }, (s) => {
       moved = s.insideReverse(s.select((f) => quadrant(f.sheet) && f.flat && f.model[1] < yLeg), legCrease(σ), { side: B0, spine: legSpine, front });
     });
     return () => moved;
   };
+  // The view stays put while the neck rises, so the other leg stays in the frame; it closes in
+  // on the body as the tail comes up, once nothing hangs below.
   const neck = reverseLeg(10, 'Reverse fold the neck up', TL, 1);
-  reverseLeg(11, 'Reverse fold the tail up', BR, -1);
+  reverseLeg(11, 'Reverse fold the tail up', BR, -1, { s: 1.45, ty: -0.95 });
   // Where the neck ended up: its tip, and the middle of its base, mirrored across the crease.
   const neckTip = mirror(B0, legCrease(1));
   const neckBase = mirror([0.097, yLeg], legCrease(1));
