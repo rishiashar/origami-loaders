@@ -6,6 +6,7 @@
 - `whale` folds its tail with a plain mountain fold, as origami.me does, and flicks it by opening that fold a little.
 - `crane` no longer comes apart at its neck, tail and head. The engine can now flex paper: for an inside reverse fold the layers beside the crease spread open along a soft line, the point swings through between them, and they close again. `insideReverse` is on the step builder for your own models.
 - The fold check is stricter: every crease of every model is checked at 40 moments of every step, with no exceptions.
+- The crane stays in the frame while its neck and tail fold up: the view closes in on the body only once the second leg has risen.
 
 ## 0.1.1
 
