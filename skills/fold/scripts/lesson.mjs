@@ -122,7 +122,12 @@ if (frames) await shoot(resolve(frames));
 /** Screenshot every step, mid-fold and finished, into frames/ and one contact sheet. */
 async function shoot(dir) {
   let chromium;
-  for (const from of [req, createRequire(import.meta.url)]) {
+  // The project's Playwright, then this script's, then a global install.
+  const { execSync } = await import('node:child_process');
+  let globalRoot = '';
+  try { globalRoot = execSync('npm root -g', { encoding: 'utf8' }).trim(); } catch {}
+  const places = [req, createRequire(import.meta.url), ...(globalRoot ? [createRequire(join(globalRoot, 'noop.js'))] : [])];
+  for (const from of places) {
     try { ({ chromium } = from('playwright')); break; } catch {}
   }
   if (!chromium) {
